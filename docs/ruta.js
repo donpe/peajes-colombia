@@ -187,6 +187,18 @@ function peajesEnRuta(routeLatLon, peajes) {
 // Pide alternativas: en muchos pares origen/destino hay más de una vía
 // razonable (ej. Medellín-Bogotá tiene una ruta corta y una más larga por
 // otro corredor), y cada una puede pasar por peajes distintos.
+//
+// Nota sobre precisión: se probó (y se descartó) verificar cada coincidencia
+// contra el nombre real de la vía en ese punto (vía OSRM /nearest), para
+// filtrar casos donde un peaje de una vía distinta cae cerca de la ruta en
+// el plano (ej. un túnel pasando por debajo de una vía de montaña vieja).
+// Ese chequeo sí resolvía ese caso, pero también descartaba peajes
+// correctos en autopistas divididas, donde la garita puede estar a 200-400m
+// del trazado que da OSRM aunque sea la misma vía — el mismo rango de
+// distancia que el error que se quería filtrar. No hay un criterio
+// automático confiable para separar ambos casos con las herramientas
+// gratuitas disponibles; queda documentado como limitación conocida
+// (ver Acerca).
 async function obtenerRutas(origen, destino) {
   const url = `${OSRM_URL}/${origen.lon},${origen.lat};${destino.lon},${destino.lat}?alternatives=true&overview=full&geometries=geojson`;
   const res = await fetch(url);
