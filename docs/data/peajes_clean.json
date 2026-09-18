@@ -3456,12 +3456,15 @@
     "telefono_peaje": null,
     "url_ficha": "http://hermes.invias.gov.co/carreteras/images/peajes/peaje.jpg",
     "categorias": {
-      "I": 6000,
-      "II": 6800,
-      "IV": 18800,
-      "V": 21600
+      "I": 12900,
+      "II": 14700,
+      "IV": 22100,
+      "V": 32000,
+      "III": 17700,
+      "VI": 40500,
+      "VII": 46700
     },
-    "tarifa_cat1": 6000,
+    "tarifa_cat1": 12900,
     "operador": null,
     "operador_tipo": "Por definir",
     "codigo_peaje": "168",
@@ -3873,13 +3876,14 @@
     "telefono_peaje": "(4) 4446178 - 2228085 - 4602225",
     "url_ficha": "http://hermes.invias.gov.co/carreteras/images/peajes/peaje.jpg",
     "categorias": {
-      "I": 10000,
-      "II": 12100,
-      "III": 22100,
-      "IV": 24900,
-      "V": 27500
+      "I": 15100,
+      "II": 18000,
+      "III": 32900,
+      "IV": 36500,
+      "V": 40500,
+      "VI": 48500
     },
-    "tarifa_cat1": 10000,
+    "tarifa_cat1": 15100,
     "operador": "Concesión Túnel Aburrá - Oriente S.A",
     "operador_tipo": "Concesión",
     "codigo_peaje": "174",
@@ -3901,8 +3905,15 @@
     "telefono_grua": null,
     "telefono_peaje": null,
     "url_ficha": "http://hermes.invias.gov.co/carreteras/images/peajes/peaje.jpg",
-    "categorias": {},
-    "tarifa_cat1": null,
+    "categorias": {
+      "I": 20200,
+      "II": 23400,
+      "III": 40200,
+      "IV": 44300,
+      "V": 48800,
+      "VI": 57900
+    },
+    "tarifa_cat1": 20200,
     "operador": "Concesión Túnel Aburrá-Oriente",
     "operador_tipo": "Concesión",
     "codigo_peaje": "175",
@@ -5623,5 +5634,35 @@
     "codigo_tramo": "8003",
     "territorial": "9",
     "departamento": "CESAR"
+  },
+  {
+    "id": "sajonia",
+    "nombre": "SAJONIA",
+    "nombre_display": "SAJONIA (Túnel de Oriente)",
+    "lat": 6.1792179,
+    "lon": -75.4528135,
+    "ubicacion": "Conexión Vial Aburrá - Oriente (Túnel de Oriente)",
+    "sector": "Medellín - Rionegro",
+    "sentido": null,
+    "pr": null,
+    "distancia_pr_m": null,
+    "telefono_grua": null,
+    "telefono_peaje": null,
+    "url_ficha": null,
+    "categorias": {
+      "I": 26300,
+      "II": 32900,
+      "III": 58600,
+      "IV": 65300,
+      "V": 72500,
+      "VI": 87100
+    },
+    "tarifa_cat1": 26300,
+    "operador": "Concesión Túnel Aburrá - Oriente S.A",
+    "operador_tipo": "Concesión",
+    "codigo_peaje": null,
+    "codigo_tramo": null,
+    "territorial": null,
+    "departamento": "ANTIOQUIA"
   }
 ]

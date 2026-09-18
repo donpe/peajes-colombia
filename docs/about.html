@@ -33,11 +33,11 @@
 
   <section class="card">
     <h2>Qué contiene el sitio</h2>
-    <div class="card-sub">Cuatro secciones, todas alimentadas por el mismo inventario de 179 peajes</div>
+    <div class="card-sub">Cuatro secciones, todas alimentadas por el mismo inventario de 180 peajes</div>
     <div class="chart-grid">
       <div class="source-card" style="padding:0">
         <div class="source-top"><span class="source-name">🗺️ Mapa</span></div>
-        <p class="source-desc">Los 179 peajes sobre un mapa real (OpenStreetMap), agrupados por cercanía, con filtro por departamento y por tipo de operador, y ficha de detalle de cada peaje al hacer clic.</p>
+        <p class="source-desc">Los 180 peajes sobre un mapa real (OpenStreetMap), agrupados por cercanía, con filtro por departamento y por tipo de operador, y ficha de detalle de cada peaje al hacer clic.</p>
         <a class="source-link" href="index.html">Ir al mapa ↗</a>
       </div>
       <div class="source-card" style="padding:0">
@@ -126,9 +126,26 @@
       </div>
       <p class="source-desc">
         Los tiles (calles, relieve, nombres de lugares) de los mapas interactivos son de OpenStreetMap,
-        un proyecto de cartografía libre y colaborativo. © colaboradores de OpenStreetMap.
+        un proyecto de cartografía libre y colaborativo. © colaboradores de OpenStreetMap. También se usó
+        su base de datos (vía Overpass API) para verificar la coordenada exacta del peaje Sajonia
+        (nodo <code>barrier=toll_booth</code>), que no está en el inventario de INVIAS.
       </p>
       <a class="source-link" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">Derechos de autor de OSM ↗</a>
+    </div>
+
+    <div class="source-card" style="padding:14px 0;border-bottom:1px solid var(--line-soft)">
+      <div class="source-top">
+        <span class="source-name">Decreto D 2026070000086 — Gobernación de Antioquia</span>
+        <span class="source-tag support">Corrección de tarifas</span>
+      </div>
+      <p class="source-desc">
+        Decreto departamental (16 ene 2026) que fija las tarifas 2026 de los peajes Variante Las Palmas,
+        Santa Elena y Sajonia (Túnel de Oriente) de la Concesión Túnel Aburrá-Oriente S.A. Es la fuente
+        primaria de las correcciones y la adición de los pasos 7 y 8. El decreto de Pajarito (concesión
+        Vía Láctea, D 2026070000085) no se consiguió en PDF; esa corrección usa una nota de prensa que
+        cita ese decreto como fuente secundaria.
+      </p>
+      <a class="source-link" href="https://tuneloriente.com/wp-content/uploads/2026/01/Resolucion-incremento-peajes-2026.pdf" target="_blank" rel="noopener">Ver decreto (PDF) ↗</a>
     </div>
 
     <div class="source-card" style="padding:14px 0 0">
@@ -217,6 +234,27 @@
           <span>Para el buscador de la página Ruta, los 1.122 municipios se cruzaron con el dataset DIVIPOLA de cabeceras municipales; los ~19 sin cabecera en ese dataset usan como respaldo el centroide de área calculado del polígono del municipio (fórmula del centroide de un polígono simple, sin librerías geoespaciales externas).</span>
         </div>
       </div>
+      <div class="pipeline-step">
+        <div class="pipeline-num">7</div>
+        <div class="pipeline-body">
+          <b>3 tarifas corregidas manualmente</b>
+          <span>Al validar el mapa contra la zona de Rionegro se encontró que INVIAS tiene desactualizada la tarifa de <b>Santa Elena</b> (reportaba $10.000, la vigente desde el 17 ene 2026 es $15.100) y sin ningún dato a <b>Variante Las Palmas</b> (todas las categorías en 0) — ambos peajes de una concesión departamental (Gobernación de Antioquia), no de INVIAS directamente. También se corrigió <b>Pajarito</b> ($6.000 → $12.900). Los tres se corrigieron con la tabla oficial del decreto vigente (categorías I-VI/VII completas, no solo la que estaba mal), documentado con su fuente exacta en <code>data/raw/correcciones_tarifas_2026.json</code> y aplicado por <code>scripts/aplicar_correcciones_tarifarias.py</code> — nunca se inventa un valor sin una fuente primaria citada.</span>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-num">8</div>
+        <div class="pipeline-body">
+          <b>1 peaje agregado que no estaba en INVIAS: SAJONIA (Túnel de Oriente)</b>
+          <span>A diferencia del paso anterior, este peaje no estaba en el inventario de INVIAS ni desactualizado ni incompleto — simplemente nunca se agregó, así que el calculador de Ruta no cobraba nada al pasar por el Túnel de Oriente (Medellín-Rionegro), la vía principal de ese corredor desde 2021. Su nombre oficial de caseta es "Sajonia" (así lo nombra el decreto departamental y OpenStreetMap), no "Túnel de Oriente" — ese es el nombre del proyecto vial, no de la caseta. Coordenadas verificadas por OpenStreetMap (nodo con <code>barrier=toll_booth</code>, a solo 19 m de la ruta real calculada por Mapbox) y tarifa por la tabla oficial del mismo decreto del paso 7. Documentado en <code>data/raw/adiciones_peajes_2026.json</code>, aplicado por <code>scripts/agregar_peajes_faltantes.py</code>. El inventario pasó de 179 a <b>180 peajes</b>.</span>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-num">9</div>
+        <div class="pipeline-body">
+          <b>Peajes de la misma vía que nunca se cobran juntos</b>
+          <span>Al agregar Sajonia se hizo más visible el problema descrito en la limitación "El cruce ruta↔peaje puede fallar…": Santa Elena (vía vieja) y Sajonia (Túnel de Oriente) son la misma vía física, y como ambos caen dentro del margen de 500 m de una ruta que pasa por el túnel, Ruta los sumaba los dos (nadie paga ambos peajes en un solo viaje). Para este par ya verificado, Ruta ahora se queda solo con el que está más cerca de la línea de la ruta calculada — no es una regla general (ver limitación), es una excepción puntual para un caso confirmado.</span>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -235,6 +273,13 @@
         <div class="pipeline-body">
           <b>8 peajes sin tarifa Categoría I</b>
           <span>Peajes marcados como siniestrados, no operativos o sin tarifa definida en el dataset original (ej. "TUNIA (SINIESTRADA)", "LA NEVERA (NO OPERATIVO)") quedan sin ese dato en vez de mostrar un valor incorrecto.</span>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-num">!</div>
+        <div class="pipeline-body">
+          <b>Puede haber más tarifas desactualizadas sin detectar</b>
+          <span>Las correcciones y adiciones de los pasos 7 y 8 se encontraron validando manualmente una zona del mapa, no revisando los 180 peajes uno por uno contra su fuente real — sobre todo los administrados por una concesión departamental en vez de INVIAS directamente, que es donde aparecieron los problemas. Es posible que existan más casos similares (tarifas desactualizadas, o peajes reales que faltan) que este proyecto todavía no ha detectado ni corregido.</span>
         </div>
       </div>
       <div class="pipeline-step">
@@ -262,7 +307,7 @@
         <div class="pipeline-num">!</div>
         <div class="pipeline-body">
           <b>El cruce ruta↔peaje puede fallar cuando dos vías corren cerca en el mapa</b>
-          <span>El método (ver paso a paso en "Qué se le hizo a los datos") mide distancia en línea recta entre cada peaje y la ruta, con un margen de 500 m. En zonas de montaña donde una vía nueva pasa muy cerca de otra distinta (ej. un túnel bajo una carretera vieja), esto puede atribuir a la ruta un peaje que en realidad está en la otra vía. Detectamos un caso real: el peaje Santa Elena (en la vía vieja Medellín-Rionegro) aparece en rutas que en realidad van por el Túnel de Oriente, que está a solo ~300 m en el plano — se repite igual con Mapbox, así que no es un problema del motor de ruteo sino de nuestro método de cruce. Probamos corregirlo comparando el nombre real de cada vía (vía OSRM/Mapbox), pero eso también empezaba a descartar peajes correctos en autopistas divididas (ej. Fusca y Unisabana, en la Autopista Norte, están igual de lejos —250-365 m— de la geometría de la ruta sin ser un error). No encontramos un criterio automático confiable para separar ambos casos con herramientas gratuitas, así que por ahora queda como limitación conocida en vez de una corrección que podría introducir errores nuevos.</span>
+          <span>El método (ver paso a paso en "Qué se le hizo a los datos") mide distancia en línea recta entre cada peaje y la ruta, con un margen de 500 m. En zonas de montaña donde una vía nueva pasa muy cerca de otra distinta (ej. un túnel bajo una carretera vieja), esto puede atribuir a la ruta un peaje que en realidad está en la otra vía. Detectamos un caso real: el peaje Santa Elena (en la vía vieja Medellín-Rionegro) cae dentro del margen de rutas que en realidad van por el Túnel de Oriente (peaje Sajonia), a solo ~300 m en el plano — se repite igual con OSRM y Mapbox, así que no es un problema del motor de ruteo sino de nuestro método de cruce. Probamos corregirlo comparando el nombre real de cada vía, pero eso también empezaba a descartar peajes correctos en autopistas divididas (ej. Fusca y Unisabana, en la Autopista Norte, están igual de lejos —250-365 m— de la geometría de la ruta sin ser un error). No encontramos un criterio automático confiable para separar ambos casos con herramientas gratuitas. Para el par Santa Elena/Sajonia, ya confirmado, sí se agregó una excepción puntual (ver paso 9) — pero el problema de fondo sigue sin una solución general, y podría repetirse en otra zona de montaña que este proyecto no ha revisado.</span>
         </div>
       </div>
     </div>

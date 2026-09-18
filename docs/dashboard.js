@@ -40,7 +40,7 @@ function haversineKm(lat1, lon1, lat2, lon2) {
 
 function renderDistanceAnalysis(peajes) {
   // Vecino más cercano de cada peaje (y su distancia), por fuerza bruta —
-  // 179 puntos son ~16.000 pares, trivial para el navegador.
+  // 180 puntos son ~16.000 pares, trivial para el navegador.
   const nearest = peajes.map(p => {
     let best = null, bestDist = Infinity;
     peajes.forEach(q => {

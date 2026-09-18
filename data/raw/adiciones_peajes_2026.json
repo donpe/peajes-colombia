@@ -1,0 +1,22 @@
+{
+  "_descripcion": "Peajes que NO existen en el inventario de INVIAS (datos.gov.co, 68qj-5xux) en absoluto — a diferencia de correcciones_tarifas_2026.json, que corrige filas que sí existen pero con datos viejos/incompletos, esto AGREGA una fila nueva. Se usa solo cuando el peaje es real, tiene tarifa vigente publicada por su operador/concedente, y su ausencia es una omisión real del inventario (no un peaje fuera de la Red Vial Nacional que legítimamente no debería estar). Cada adición cita coordenadas y tarifa con su fuente. Aplicado por scripts/agregar_peajes_faltantes.py.",
+  "adiciones": [
+    {
+      "id": "sajonia",
+      "nombre": "SAJONIA",
+      "nombre_display": "SAJONIA (Túnel de Oriente)",
+      "motivo": "El peaje del Túnel de Oriente (Conexión Vial Aburrá-Oriente, la ruta principal Medellín-Rionegro desde 2021) no está en el inventario de INVIAS en absoluto — no es que esté desactualizado, simplemente nunca se agregó. Se detectó al validar que el calculador de Ruta no cobraba nada en esa vía. Su nombre oficial de peaje es 'Sajonia' (así lo nombra el decreto departamental y OpenStreetMap), no 'Túnel de Oriente' — ese es el nombre del proyecto/vía, no de la caseta.",
+      "lat": 6.1792179,
+      "lon": -75.4528135,
+      "fuente_coordenadas": "OpenStreetMap, node 6906532324, barrier=toll_booth name='Peaje Sajonia' (Overpass API, consultado 2026-09-18)",
+      "ubicacion": "Conexión Vial Aburrá - Oriente (Túnel de Oriente)",
+      "sector": "Medellín - Rionegro",
+      "operador": "Concesión Túnel Aburrá - Oriente S.A",
+      "operador_tipo": "Concesión",
+      "departamento": "Antioquia",
+      "fuente_tarifa": "Decreto D 2026070000086 del 16/01/2026, Gobernación de Antioquia, tabla 'ESTACIONES DE PEAJE TÚNEL DE ORIENTE'",
+      "fecha_verificacion": "2026-09-18",
+      "categorias": { "I": 26300, "II": 32900, "III": 58600, "IV": 65300, "V": 72500, "VI": 87100 }
+    }
+  ]
+}
