@@ -4,7 +4,7 @@ Mapa interactivo, calculador de ruta y dashboard de análisis sobre el inventari
 de peajes de la Red Vial Nacional de Colombia, construido sobre datos abiertos
 de INVIAS ([datos.gov.co](https://www.datos.gov.co/Transporte/Peajes/68qj-5xux)).
 
-**Sitio en vivo:** _(se agrega aquí después de publicar en GitHub Pages)_
+**Sitio en vivo:** https://donpe.github.io/peajes-colombia/
 
 ## Qué contiene
 
