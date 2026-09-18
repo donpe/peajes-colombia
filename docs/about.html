@@ -252,7 +252,7 @@
         <div class="pipeline-num">!</div>
         <div class="pipeline-body">
           <b>Las "rutas alternas" no son todas las vías reales conocidas</b>
-          <span>Cuando existe más de una opción razonable (ej. Medellín-Bogotá), Ruta muestra hasta dos: la recomendada y una alterna. Pero OSRM solo ofrece una alterna cuando su algoritmo la considera competitiva en tiempo frente a la mejor — si una vía real es claramente más lenta (ej. un camino de montaña frente a un túnel nuevo), la descarta aunque exista y se use. Comprobamos el caso Rionegro-Medellín: solo devuelve la ruta por el Túnel de Oriente, no la vía antigua por Santa Elena. El servidor público que usamos tampoco permite pedir "evitar peajes" (el parámetro <code>exclude</code> no está habilitado en este servidor gratuito).</span>
+          <span>Cuando existe más de una opción razonable (ej. Medellín-Bogotá), Ruta muestra hasta dos: la recomendada y una alterna. Pero OSRM solo ofrece una alterna cuando su algoritmo la considera competitiva en tiempo frente a la mejor — si una vía real es claramente más lenta, la descarta aunque exista y se use. Comprobamos el caso Medellín-Rionegro: solo devuelve la ruta por el corredor del Túnel de Oriente (peaje Santa Elena), y no ofrece como alterna la ruta por Las Palmas — un corredor real distinto, con sus propios peajes (Las Palmas, Variante Las Palmas) en el mismo inventario. El servidor público que usamos tampoco permite pedir "evitar peajes" (el parámetro <code>exclude</code> no está habilitado en este servidor gratuito).</span>
         </div>
       </div>
     </div>
