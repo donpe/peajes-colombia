@@ -375,9 +375,10 @@ function renderMapa(ruta, matches) {
   routeLayer.addLayer(L.marker(ruta.latlon[0], { icon: startIcon }));
   routeLayer.addLayer(L.marker(ruta.latlon[ruta.latlon.length - 1], { icon: endIcon }));
 
+  const cat = document.getElementById('catSelect').value;
   matches.forEach((m, i) => {
     const marker = L.marker([m.peaje.lat, m.peaje.lon], { icon: tollIcon(i + 1) });
-    marker.bindPopup(`<b>${m.peaje.nombre_display}</b><br>km ${m.along.toFixed(0)} de la ruta`);
+    marker.bindPopup(popupHtml(m.peaje, m.along, cat), { maxWidth: 260 });
     tollLayerGroup.addLayer(marker);
   });
 
@@ -385,6 +386,18 @@ function renderMapa(ruta, matches) {
     map.invalidateSize();
     map.fitBounds(line.getBounds(), { padding: [24, 24] });
   }, 50);
+}
+
+// Misma estructura que el popup del Mapa (app.js): nombre, operador, tarifa —
+// con el km de la ruta como línea extra, propia de este contexto.
+function popupHtml(p, along, cat) {
+  const tarifa = p.categorias ? p.categorias[cat] : null;
+  return `<div style="font-family:'Outfit',sans-serif;font-size:13px;min-width:180px">
+    <div style="font-weight:700;font-family:'Outfit',sans-serif;font-size:15px">${p.nombre_display}</div>
+    <div style="color:#666;margin:2px 0 6px">${p.operador || 'Operador no definido'}</div>
+    <div style="font-family:'Roboto Mono',monospace;font-weight:600">Categoría ${cat}: ${tarifa != null ? '$' + money(tarifa) : '—'}</div>
+    <div style="color:#888;font-size:12px;margin-top:4px">km ${along.toFixed(0)} de la ruta</div>
+  </div>`;
 }
 
 function endpointIcon(color, letter) {
