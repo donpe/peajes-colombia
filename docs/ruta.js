@@ -1,6 +1,6 @@
 /* Calculador de ruta — Peajes de Colombia
    Flujo: municipio origen/destino (autocompletado local) -> ruta real por
-   Mapbox Directions -> cruce geométrico de la ruta contra los 179 peajes ->
+   Mapbox Directions -> cruce geométrico de la ruta contra los 180 peajes ->
    resumen y mapa. */
 
 const money = n => n == null ? '—' : new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(n);
@@ -15,10 +15,21 @@ const MAPBOX_URL = 'https://api.mapbox.com/directions/v5/mapbox/driving-traffic'
 const MATCH_THRESHOLD_KM = 0.5;   // qué tan cerca de la ruta debe estar un peaje para contar
 const DEDUP_ALONG_KM = 0.3;       // peajes a menos de esto entre sí (a lo largo de la ruta) se consideran el mismo cruce
 
+// Pares de peajes verificados manualmente como la MISMA vía física (uno de
+// ellos siempre es un falso positivo geométrico, ver limitación documentada
+// en Acerca: "El cruce ruta↔peaje puede fallar cuando dos vías corren cerca
+// en el mapa"). Si ambos caen dentro del umbral en la misma ruta, se descarta
+// el que está más lejos de la línea de la ruta — nunca se cobran los dos.
+//   santa-elena / sajonia: confirmado con reverse geocoding + los pasos de
+//   OSRM/Mapbox que son la vía vieja (Vía Santa Elena) y el Túnel de Oriente
+//   respectivamente — nadie paga ambos peajes en un solo paso por ahí.
+const PEAJES_MISMA_VIA = [['santa-elena', 'sajonia']];
+
 let municipios = [];
 let selOrigen = null;   // { n, d, lat, lon }
 let selDestino = null;
 let map, routeLayer, tollLayerGroup;
+let tollMarkers = [];  // marcadores de peaje de la ruta activa, en el mismo orden que la lista
 let rutasCalculadas = [];  // [{ ruta, matches }, ...] — todas las alternativas de la última búsqueda
 let rutaActivaIdx = 0;
 
@@ -190,7 +201,20 @@ function peajesEnRuta(routeLatLon, peajes) {
     }
   });
 
-  return dedup;
+  return quitarDuplicadosDeMismaVia(dedup);
+}
+
+function quitarDuplicadosDeMismaVia(matches) {
+  let resultado = matches;
+  PEAJES_MISMA_VIA.forEach(([idA, idB]) => {
+    const a = resultado.find(m => m.peaje.id === idA);
+    const b = resultado.find(m => m.peaje.id === idB);
+    if (a && b) {
+      const peor = a.distRuta <= b.distRuta ? b : a;
+      resultado = resultado.filter(m => m !== peor);
+    }
+  });
+  return resultado;
 }
 
 /* ---------------- ruteo (Mapbox Directions) ---------------- */
@@ -235,6 +259,87 @@ async function obtenerRutas(origen, destino, evitarPeajes) {
   }));
 }
 
+/* ---------------- filtrar alternativas que no son reales ---------------- */
+
+// Mapbox suele devolver "alternativas" que en realidad son la misma vía con
+// una variación de calles dentro de la ciudad de origen o destino — no una
+// alternativa real de carretera. Una alterna solo se muestra si:
+//   1) cambia el conjunto o el costo de los peajes, O
+//   2) la distancia o el tiempo difieren de forma significativa,
+// Y ADEMÁS su trazado no es casi idéntico al de la recomendada en la parte
+// de carretera (si comparten la enorme mayoría del camino, el "cambio" de
+// arriba viene solo de un desvío local, no de una ruta distinta).
+const MIN_DIST_DIFF_KM = 8;
+const MIN_DIST_DIFF_PCT = 0.08;
+const MIN_DURATION_DIFF_MIN = 10;
+const MAX_SOLAPAMIENTO = 0.85;   // 85% del trazado en común -> no es una alternativa real
+const OVERLAP_SAMPLE_KM = 1;
+const OVERLAP_MATCH_KM = 0.25;
+
+function totalCategoriaI(matches) {
+  return matches.reduce((sum, m) => sum + (m.peaje.categorias?.I ?? 0), 0);
+}
+
+function mismoConjuntoDePeajes(a, b) {
+  const idsA = a.map(m => m.peaje.id).sort().join('|');
+  const idsB = b.map(m => m.peaje.id).sort().join('|');
+  return idsA === idsB;
+}
+
+// Fracción (0-1) del trazado de `latlon` que pasa a menos de OVERLAP_MATCH_KM
+// del trazado `base` — reusa la misma proyección/distancia punto-segmento
+// que el cruce ruta↔peaje. projector() da coordenadas en km (ver
+// MATCH_THRESHOLD_KM más arriba), no en metros.
+function fraccionSolapada(latlon, base) {
+  const lat0 = base[Math.floor(base.length / 2)][0];
+  const proj = projector(lat0);
+  const basePts = base.map(([lat, lon]) => proj(lat, lon));
+
+  const pts = latlon.map(([lat, lon]) => proj(lat, lon));
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) {
+    cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  }
+  const totalKm = cum[cum.length - 1];
+  if (totalKm === 0) return 1;
+
+  let dentro = 0, muestras = 0;
+  for (let d = 0; d <= totalKm; d += OVERLAP_SAMPLE_KM) {
+    let i = cum.findIndex(c => c >= d);
+    if (i <= 0) i = 1;
+    const [px, py] = pts[i - 1];
+    let best = Infinity;
+    for (let j = 0; j < basePts.length - 1; j++) {
+      const { d: dd } = distPointToSegment(px, py, basePts[j][0], basePts[j][1], basePts[j + 1][0], basePts[j + 1][1]);
+      if (dd < best) best = dd;
+    }
+    muestras++;
+    if (best <= OVERLAP_MATCH_KM) dentro++;
+  }
+  return muestras ? dentro / muestras : 1;
+}
+
+function esAlternativaReal(base, alt) {
+  const distDiffKm = Math.abs(alt.ruta.distanceKm - base.ruta.distanceKm);
+  const distDiffPct = base.ruta.distanceKm ? distDiffKm / base.ruta.distanceKm : 0;
+  const durDiffMin = Math.abs(alt.ruta.durationH - base.ruta.durationH) * 60;
+  const difierenTiempoDistancia = distDiffKm >= MIN_DIST_DIFF_KM || distDiffPct >= MIN_DIST_DIFF_PCT || durDiffMin >= MIN_DURATION_DIFF_MIN;
+
+  const difierenPeajes = totalCategoriaI(base.matches) !== totalCategoriaI(alt.matches) ||
+    !mismoConjuntoDePeajes(base.matches, alt.matches);
+
+  if (!difierenTiempoDistancia && !difierenPeajes) return false;
+
+  const solapamiento = fraccionSolapada(alt.ruta.latlon, base.ruta.latlon);
+  return solapamiento < MAX_SOLAPAMIENTO;
+}
+
+function filtrarAlternativasReales(rutas) {
+  if (rutas.length < 2) return rutas;
+  const [base, ...resto] = rutas;
+  return [base, ...resto.filter(alt => esAlternativaReal(base, alt))];
+}
+
 /* ---------------- flujo principal ---------------- */
 
 async function calcularRuta() {
@@ -264,7 +369,8 @@ async function calcularRuta() {
       obtenerRutas(selOrigen, selDestino, evitarPeajes),
     ]);
 
-    rutasCalculadas = rutas.map(ruta => ({ ruta, matches: peajesEnRuta(ruta.latlon, peajesRes) }));
+    const todasLasRutas = rutas.map(ruta => ({ ruta, matches: peajesEnRuta(ruta.latlon, peajesRes) }));
+    rutasCalculadas = filtrarAlternativasReales(todasLasRutas);
     rutaActivaIdx = 0;
     renderRouteOptions();
     mostrarResultados();
@@ -328,13 +434,14 @@ function mostrarResultados() {
   document.getElementById('tollsSub').textContent =
     `${selOrigen.n} → ${selDestino.n} · Categoría ${cat} (${catLabel(cat)})`;
 
+  const tollsList = document.getElementById('tollsList');
   if (!matches.length) {
-    document.getElementById('tollsList').innerHTML = `<div class="ac-empty">No se detectaron peajes en esta ruta.</div>`;
+    tollsList.innerHTML = `<div class="ac-empty">No se detectaron peajes en esta ruta.</div>`;
   } else {
-    document.getElementById('tollsList').innerHTML = matches.map((m, i) => {
+    tollsList.innerHTML = matches.map((m, i) => {
       const tarifa = m.peaje.categorias ? m.peaje.categorias[cat] : null;
       return `
-      <div class="rank-row">
+      <div class="rank-row rank-row-clickable" data-i="${i}">
         <span class="rank-pos">${i + 1}</span>
         <span class="rank-name">${m.peaje.nombre_display}
           <div class="rank-sub">km ${m.along.toFixed(0)} · ${m.peaje.operador || 'Operador no definido'}</div>
@@ -345,6 +452,12 @@ function mostrarResultados() {
   }
 
   renderMapa(ruta, matches);
+
+  // clic en un peaje de la lista -> lo centra en el mapa y abre su ficha
+  // (los marcadores ya existen porque renderMapa() acaba de crearlos)
+  tollsList.querySelectorAll('.rank-row-clickable').forEach(el => {
+    el.addEventListener('click', () => irAPeajeEnMapa(+el.dataset.i));
+  });
 }
 
 function formatDuracion(h) {
@@ -376,16 +489,27 @@ function renderMapa(ruta, matches) {
   routeLayer.addLayer(L.marker(ruta.latlon[ruta.latlon.length - 1], { icon: endIcon }));
 
   const cat = document.getElementById('catSelect').value;
-  matches.forEach((m, i) => {
-    const marker = L.marker([m.peaje.lat, m.peaje.lon], { icon: tollIcon(i + 1) });
+  tollMarkers = matches.map((m, i) => {
+    const color = OP_COLOR[m.peaje.operador_tipo] || OP_COLOR['Por definir'];
+    const marker = L.marker([m.peaje.lat, m.peaje.lon], { icon: tollIcon(i + 1, color) });
     marker.bindPopup(popupHtml(m.peaje, m.along, cat), { maxWidth: 260 });
     tollLayerGroup.addLayer(marker);
+    return marker;
   });
 
   setTimeout(() => {
     map.invalidateSize();
     map.fitBounds(line.getBounds(), { padding: [24, 24] });
   }, 50);
+}
+
+// Lleva el mapa al peaje elegido en la lista y abre su ficha — mismo gesto
+// que seleccionar un peaje en la lista del Mapa.
+function irAPeajeEnMapa(i) {
+  const marker = tollMarkers[i];
+  if (!map || !marker) return;
+  map.setView(marker.getLatLng(), Math.max(map.getZoom(), 13), { animate: true });
+  marker.openPopup();
 }
 
 // Misma estructura que el popup del Mapa (app.js): nombre, operador, tarifa —
@@ -409,12 +533,24 @@ function endpointIcon(color, letter) {
   });
 }
 
-function tollIcon(n) {
+// Mismo pin (forma de gota) que usan los peajes en el Mapa — coloreado por
+// tipo de operador, igual que allá — pero con el número de orden en la ruta
+// en vez de "$", porque aquí ese orden es la información relevante.
+function tollIcon(n, color) {
+  const svg = `
+    <svg width="26" height="34" viewBox="0 0 26 34" xmlns="http://www.w3.org/2000/svg">
+      <path d="M13 0.5C6.1 0.5 0.5 6.1 0.5 13c0 9.2 12.5 20 12.5 20s12.5-10.8 12.5-20C25.5 6.1 19.9 0.5 13 0.5z"
+            fill="${color}" stroke="#fff" stroke-width="1.5"/>
+      <circle cx="13" cy="13" r="7" fill="#fff"/>
+      <text x="13" y="17.5" text-anchor="middle" font-family="'Roboto Mono', monospace"
+            font-weight="700" font-size="11" fill="${color}">${n}</text>
+    </svg>`;
   return L.divIcon({
-    className: '',
-    html: `<div style="width:20px;height:20px;border-radius:50%;background:#dd9a2f;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Roboto Mono',monospace;font-weight:600;font-size:10px">${n}</div>`,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
+    className: 'peaje-pin',
+    html: svg,
+    iconSize: [26, 34],
+    iconAnchor: [13, 34],
+    popupAnchor: [0, -30],
   });
 }
 
