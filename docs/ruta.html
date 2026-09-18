@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculador de ruta — Peajes de Colombia</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="content-page">
+
+<header id="header">
+  <div class="brand">
+    <span class="eyebrow">Datos abiertos · INVIAS</span>
+    <h1>Peajes de Colombia</h1>
+  </div>
+  <nav class="site-nav">
+    <a href="index.html">Mapa</a>
+    <a href="ruta.html" class="active">Ruta</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="about.html">Acerca</a>
+  </nav>
+</header>
+
+<main class="page">
+
+  <div class="page-head">
+    <h1>Calculador de ruta</h1>
+    <p>Elige un municipio de origen y uno de destino: trazamos la ruta por carretera y sumamos los peajes que encuentra en el camino.</p>
+  </div>
+
+  <section class="card route-form">
+    <div class="route-inputs">
+      <div class="autocomplete" id="acOrigen">
+        <label for="inputOrigen">Origen</label>
+        <input id="inputOrigen" type="text" placeholder="Ej. Bogotá D.C." autocomplete="off">
+        <div class="ac-list" id="listOrigen" hidden></div>
+      </div>
+
+      <button id="swapBtn" class="swap-btn" type="button" aria-label="Intercambiar origen y destino" title="Intercambiar">⇅</button>
+
+      <div class="autocomplete" id="acDestino">
+        <label for="inputDestino">Destino</label>
+        <input id="inputDestino" type="text" placeholder="Ej. Medellín" autocomplete="off">
+        <div class="ac-list" id="listDestino" hidden></div>
+      </div>
+
+      <div class="cat-select">
+        <label for="catSelect">Categoría de vehículo</label>
+        <select id="catSelect">
+          <option value="I">I — Automóvil</option>
+          <option value="II">II — Bus / 2 ejes</option>
+          <option value="III">III — Camión 3 ejes</option>
+          <option value="IV">IV — Camión 4 ejes</option>
+          <option value="V">V — Camión 5+ ejes</option>
+        </select>
+      </div>
+
+      <button id="calcBtn" class="calc-btn" type="button">Calcular ruta</button>
+    </div>
+    <div class="route-status" id="routeStatus" hidden></div>
+  </section>
+
+  <div id="resultsWrap" hidden>
+    <div class="kpi-row" id="routeKpis"></div>
+
+    <div class="chart-grid route-grid">
+      <section class="card" style="padding:0;overflow:hidden">
+        <div id="routeMap"></div>
+      </section>
+      <section class="card">
+        <h2>Peajes en el camino</h2>
+        <div class="card-sub" id="tollsSub"></div>
+        <div class="rank-list" id="tollsList"></div>
+      </section>
+    </div>
+
+    <p class="route-note">⚠️ El tiempo de viaje es solo una referencia: no incluye tráfico, así que puede diferir bastante de la realidad. Lo que esta herramienta te da con confianza es cuánto vas a pagar de peaje en el camino.</p>
+  </div>
+
+  <p style="text-align:center;color:var(--ink-faint);font-size:12.5px;padding-top:8px">
+    Ruteo: <a href="https://project-osrm.org" target="_blank" rel="noopener" style="color:inherit">OSRM</a> sobre datos de OpenStreetMap ·
+    Peajes: <a href="https://www.datos.gov.co/Transporte/Peajes/68qj-5xux" target="_blank" rel="noopener" style="color:inherit">INVIAS vía datos.gov.co</a> ·
+    Distancias y tiempos son estimados
+  </p>
+
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="ruta.js"></script>
+</body>
+</html>

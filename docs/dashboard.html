@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Peajes de Colombia</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="content-page">
+
+<header id="header">
+  <div class="brand">
+    <span class="eyebrow">Datos abiertos · INVIAS</span>
+    <h1>Peajes de Colombia</h1>
+  </div>
+  <nav class="site-nav">
+    <a href="index.html">Mapa</a>
+    <a href="ruta.html">Ruta</a>
+    <a href="dashboard.html" class="active">Dashboard</a>
+    <a href="about.html">Acerca</a>
+  </nav>
+</header>
+
+<main class="page">
+
+  <div class="page-head">
+    <h1>Análisis de tarifas y operadores</h1>
+    <p>Lectura de los 179 peajes de la Red Vial Nacional: cómo se distribuyen las tarifas, quién los opera y cómo varían entre departamentos.</p>
+  </div>
+
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <div class="chart-grid">
+    <section class="card">
+      <h2>Distribución de tarifas — Categoría I</h2>
+      <div class="card-sub">Cuántos peajes caen en cada rango de precio (vehículo particular)</div>
+      <canvas id="histChart" height="220"></canvas>
+    </section>
+    <section class="card">
+      <h2>INVIAS vs. Concesión</h2>
+      <div class="card-sub">Quién administra los peajes, y a qué tarifa promedio</div>
+      <canvas id="opChart" height="220"></canvas>
+    </section>
+  </div>
+
+  <div class="chart-grid">
+    <section class="card">
+      <h2>Los 10 peajes más caros</h2>
+      <div class="card-sub">Tarifa Categoría I (vehículo particular)</div>
+      <div class="rank-list" id="topExpensive"></div>
+    </section>
+    <section class="card">
+      <h2>Los 10 peajes más económicos</h2>
+      <div class="card-sub">Tarifa Categoría I (vehículo particular)</div>
+      <div class="rank-list" id="topCheap"></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Peajes por departamento</h2>
+    <div class="card-sub">Los 33 departamentos, ordenados por cantidad de peajes</div>
+    <div id="deptoBars"></div>
+  </section>
+
+  <section class="card">
+    <h2>Operadores con más peajes</h2>
+    <div class="card-sub">Top 12 — incluye INVIAS y las principales concesiones</div>
+    <div id="operatorBars"></div>
+  </section>
+
+  <section class="card">
+    <h2>Cómo escala la tarifa por tipo de vehículo</h2>
+    <div class="card-sub">Promedio nacional por categoría — de auto particular a camión de 5+ ejes</div>
+    <div id="categoryBars"></div>
+  </section>
+
+  <div class="page-head" style="padding-top:8px">
+    <h1 style="font-size:22px">Distancias entre peajes</h1>
+    <p>Qué tan cerca o lejos está cada peaje de su vecino más próximo, calculado en línea recta (distancia geodésica) entre las coordenadas de los 179 peajes. Útil para detectar tramos con peajes muy seguidos, o casos aislados.</p>
+  </div>
+
+  <div class="kpi-row" id="distKpiRow"></div>
+
+  <div class="chart-grid">
+    <section class="card">
+      <h2>Los 10 pares de peajes más cercanos entre sí</h2>
+      <div class="card-sub">Distancia en línea recta entre cada peaje y su vecino más próximo</div>
+      <div class="rank-list" id="closestPairs"></div>
+    </section>
+    <section class="card">
+      <h2>Los 10 peajes más aislados</h2>
+      <div class="card-sub">Mayor distancia hasta su peaje más cercano</div>
+      <div class="rank-list" id="mostIsolated"></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Distribución de distancias al vecino más cercano</h2>
+    <div class="card-sub">Cada peaje aporta un dato: qué tan lejos está de su vecino más próximo</div>
+    <canvas id="distHistChart" height="200"></canvas>
+  </section>
+
+  <p style="text-align:center;color:var(--ink-faint);font-size:12.5px;padding-top:8px">
+    Datos: <a href="https://www.datos.gov.co/Transporte/Peajes/68qj-5xux" target="_blank" rel="noopener" style="color:inherit">INVIAS vía datos.gov.co</a>,
+    snapshot del 16 sep 2026 · Ver <a href="about.html" style="color:inherit">metodología completa</a>
+  </p>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>
