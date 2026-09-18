@@ -217,7 +217,7 @@
     </div>
   </section>
 
-  <section class="card">
+  <section class="card" id="limitaciones">
     <h2>Limitaciones a tener en cuenta</h2>
     <div class="pipeline-steps">
       <div class="pipeline-step">
@@ -246,6 +246,13 @@
         <div class="pipeline-body">
           <b>El tiempo de viaje en Ruta es referencial, sin tráfico</b>
           <span>OSRM (motor de ruteo) no tiene datos de tráfico en tiempo real, y su cálculo de velocidad no está calibrado para el terreno montañoso colombiano: en algunas rutas de montaña puede quedarse corto y en otras pasarse, comparado con lo que muestra Google Maps. La distancia y los peajes detectados en el camino sí son confiables.</span>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-num">!</div>
+        <div class="pipeline-body">
+          <b>Las "rutas alternas" no son todas las vías reales conocidas</b>
+          <span>Cuando existe más de una opción razonable (ej. Medellín-Bogotá), Ruta muestra hasta dos: la recomendada y una alterna. Pero OSRM solo ofrece una alterna cuando su algoritmo la considera competitiva en tiempo frente a la mejor — si una vía real es claramente más lenta (ej. un camino de montaña frente a un túnel nuevo), la descarta aunque exista y se use. Comprobamos el caso Rionegro-Medellín: solo devuelve la ruta por el Túnel de Oriente, no la vía antigua por Santa Elena. El servidor público que usamos tampoco permite pedir "evitar peajes" (el parámetro <code>exclude</code> no está habilitado en este servidor gratuito).</span>
         </div>
       </div>
     </div>
