@@ -13,6 +13,8 @@ let municipios = [];
 let selOrigen = null;   // { n, d, lat, lon }
 let selDestino = null;
 let map, routeLayer, tollLayerGroup;
+let rutasCalculadas = [];  // [{ ruta, matches }, ...] — todas las alternativas de la última búsqueda
+let rutaActivaIdx = 0;
 
 async function init() {
   const res = await fetch('data/municipios.json');
@@ -23,6 +25,11 @@ async function init() {
 
   document.getElementById('swapBtn').addEventListener('click', swapOrigenDestino);
   document.getElementById('calcBtn').addEventListener('click', calcularRuta);
+  document.getElementById('catSelect').addEventListener('change', () => {
+    // cambiar de categoría no requiere volver a pedir la ruta: ya tenemos
+    // los peajes de cada alternativa, solo cambia qué tarifa se suma.
+    if (rutasCalculadas.length) { renderRouteOptions(); mostrarResultados(); }
+  });
 }
 
 /* ---------------- autocompletado ---------------- */
@@ -177,20 +184,22 @@ function peajesEnRuta(routeLatLon, peajes) {
 
 /* ---------------- ruteo (OSRM) ---------------- */
 
-async function obtenerRuta(origen, destino) {
-  const url = `${OSRM_URL}/${origen.lon},${origen.lat};${destino.lon},${destino.lat}?overview=full&geometries=geojson`;
+// Pide alternativas: en muchos pares origen/destino hay más de una vía
+// razonable (ej. Medellín-Bogotá tiene una ruta corta y una más larga por
+// otro corredor), y cada una puede pasar por peajes distintos.
+async function obtenerRutas(origen, destino) {
+  const url = `${OSRM_URL}/${origen.lon},${origen.lat};${destino.lon},${destino.lat}?alternatives=true&overview=full&geometries=geojson`;
   const res = await fetch(url);
   if (!res.ok) throw new Error('El servicio de ruteo no respondió (HTTP ' + res.status + ')');
   const data = await res.json();
   if (data.code !== 'Ok' || !data.routes || !data.routes.length) {
     throw new Error('No se encontró una ruta por carretera entre esos dos puntos.');
   }
-  const r = data.routes[0];
-  return {
+  return data.routes.map(r => ({
     distanceKm: r.distance / 1000,
     durationH: r.duration / 3600,
     latlon: r.geometry.coordinates.map(([lon, lat]) => [lat, lon]),
-  };
+  }));
 }
 
 /* ---------------- flujo principal ---------------- */
@@ -216,13 +225,15 @@ async function calcularRuta() {
   status.textContent = 'Calculando ruta…';
 
   try {
-    const [peajesRes, ruta] = await Promise.all([
+    const [peajesRes, rutas] = await Promise.all([
       fetch('data/peajes_clean.json').then(r => r.json()),
-      obtenerRuta(selOrigen, selDestino),
+      obtenerRutas(selOrigen, selDestino),
     ]);
 
-    const matches = peajesEnRuta(ruta.latlon, peajesRes);
-    mostrarResultados(ruta, matches);
+    rutasCalculadas = rutas.map(ruta => ({ ruta, matches: peajesEnRuta(ruta.latlon, peajesRes) }));
+    rutaActivaIdx = 0;
+    renderRouteOptions();
+    mostrarResultados();
     status.hidden = true;
   } catch (err) {
     status.textContent = err.message || 'No se pudo calcular la ruta. Intenta de nuevo.';
@@ -232,11 +243,37 @@ async function calcularRuta() {
   }
 }
 
+function seleccionarRuta(idx) {
+  rutaActivaIdx = idx;
+  renderRouteOptions();
+  mostrarResultados();
+}
+
+function renderRouteOptions() {
+  const el = document.getElementById('routeOptions');
+  if (rutasCalculadas.length < 2) { el.hidden = true; el.innerHTML = ''; return; }
+
+  const cat = document.getElementById('catSelect').value;
+  el.hidden = false;
+  el.innerHTML = rutasCalculadas.map(({ ruta, matches }, i) => {
+    const conTarifa = matches.filter(m => m.peaje.categorias && m.peaje.categorias[cat] != null);
+    const total = conTarifa.reduce((sum, m) => sum + m.peaje.categorias[cat], 0);
+    const label = i === 0 ? 'Ruta recomendada' : `Ruta alterna ${rutasCalculadas.length > 2 ? i : ''}`.trim();
+    return `
+      <button class="route-option${i === rutaActivaIdx ? ' active' : ''}" data-i="${i}">
+        <span class="route-option-label">${label}</span>
+        <span class="route-option-stats">${ruta.distanceKm.toFixed(0)} km · ${matches.length} peaje${matches.length === 1 ? '' : 's'} · $${money(total)}</span>
+      </button>`;
+  }).join('');
+  [...el.children].forEach(btn => btn.addEventListener('click', () => seleccionarRuta(+btn.dataset.i)));
+}
+
 function catLabel(cat) {
   return { I: 'Automóvil', II: 'Bus / 2 ejes', III: 'Camión 3 ejes', IV: 'Camión 4 ejes', V: 'Camión 5+ ejes' }[cat] || cat;
 }
 
-function mostrarResultados(ruta, matches) {
+function mostrarResultados() {
+  const { ruta, matches } = rutasCalculadas[rutaActivaIdx];
   document.getElementById('resultsWrap').hidden = false;
   const cat = document.getElementById('catSelect').value;
 

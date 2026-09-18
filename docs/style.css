@@ -309,6 +309,21 @@ body.content-page{ overflow-y:auto; overflow-x:hidden; display:block; }
 #routeMap{ height:460px; width:100%; }
 .rank-list{ max-height:420px; overflow-y:auto; }
 
+.route-options{ display:flex; gap:10px; flex-wrap:wrap; }
+.route-options[hidden]{ display:none; }
+.route-option{
+  flex:1 1 200px; text-align:left; cursor:pointer; display:flex; flex-direction:column; gap:3px;
+  background:var(--surface); border:1.5px solid var(--line); border-radius:12px; padding:10px 14px;
+  font-family:inherit; transition:border-color .15s, background .15s;
+}
+.route-option:hover{ border-color:var(--accent); }
+.route-option.active{ border-color:var(--accent); background:var(--accent-bg); }
+.route-option-label{
+  font-family:'Outfit',sans-serif; font-weight:700; font-size:12.5px; color:var(--ink);
+  text-transform:uppercase; letter-spacing:.03em;
+}
+.route-option-stats{ font-family:'Roboto Mono',monospace; font-size:12.5px; color:var(--ink-soft); }
+
 @media (max-width:900px){
   .route-inputs{ grid-template-columns:1fr; }
   .swap-btn{ align-self:center; transform:rotate(90deg); }
