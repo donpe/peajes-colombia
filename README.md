@@ -12,8 +12,9 @@ de INVIAS ([datos.gov.co](https://www.datos.gov.co/Transporte/Peajes/68qj-5xux))
   (OpenStreetMap), agrupados por cercanía, filtrables por departamento y tipo de
   operador, con ficha de detalle por peaje.
 - **Ruta** ([docs/ruta.html](docs/ruta.html)) — calculadora de viaje: origen/destino
-  con buscador predictivo de municipios, ruta trazada con OSRM, y los peajes que
-  encuentra en el camino con su costo por categoría de vehículo.
+  con buscador predictivo de municipios, ruta trazada con Mapbox Directions (con
+  tráfico en tiempo real y opción de evitar peajes), y los peajes que encuentra
+  en el camino con su costo por categoría de vehículo.
 - **Dashboard** ([docs/dashboard.html](docs/dashboard.html)) — análisis del
   inventario completo: distribución de tarifas, INVIAS vs. concesión, ranking de
   operadores y distancias entre peajes.
@@ -52,6 +53,7 @@ Y abrir `http://localhost:8420`.
 
 - [Peajes — INVIAS vía datos.gov.co](https://www.datos.gov.co/Transporte/Peajes/68qj-5xux) (CC BY-SA 4.0)
 - División político-administrativa y DIVIPOLA — DANE
-- Mapas y ruteo — [OpenStreetMap](https://www.openstreetmap.org/copyright) / [OSRM](https://project-osrm.org)
+- Mapas — [OpenStreetMap](https://www.openstreetmap.org/copyright)
+- Ruteo — [Mapbox Directions](https://www.mapbox.com/directions)
 
 Proyecto independiente de visualización de datos abiertos. No es un canal oficial de INVIAS.

@@ -133,15 +133,18 @@
 
     <div class="source-card" style="padding:14px 0 0">
       <div class="source-top">
-        <span class="source-name">OSRM (Open Source Routing Machine)</span>
+        <span class="source-name">Mapbox Directions</span>
         <span class="source-tag support">Cálculo de ruta</span>
       </div>
       <p class="source-desc">
-        Motor de ruteo de código abierto que calcula la ruta por carretera, distancia y tiempo estimado entre
-        origen y destino en la página Ruta, usando el servidor público de demostración de OSRM sobre datos
-        viales de OpenStreetMap. No incluye tráfico en tiempo real — ver limitaciones más abajo.
+        Servicio de ruteo que calcula la ruta por carretera, distancia y tiempo estimado entre origen y destino
+        en la página Ruta, con tráfico en tiempo real (perfil <code>driving-traffic</code>) y soporte real para
+        "evitar peajes". Se usó primero el servidor público gratuito de OSRM, pero no tenía datos de tráfico
+        ni permitía evitar peajes; se migró a Mapbox por su capa gratuita generosa (100.000 rutas/mes) y por ser
+        seguro usar un token público directamente en el código del sitio (se restringe por dominio desde el
+        dashboard de Mapbox, sin necesitar un servidor propio).
       </p>
-      <a class="source-link" href="https://project-osrm.org" target="_blank" rel="noopener">project-osrm.org ↗</a>
+      <a class="source-link" href="https://www.mapbox.com/directions" target="_blank" rel="noopener">mapbox.com/directions ↗</a>
     </div>
   </section>
 
@@ -244,22 +247,22 @@
       <div class="pipeline-step">
         <div class="pipeline-num">!</div>
         <div class="pipeline-body">
-          <b>El tiempo de viaje en Ruta es referencial, sin tráfico</b>
-          <span>OSRM (motor de ruteo) no tiene datos de tráfico en tiempo real, y su cálculo de velocidad no está calibrado para el terreno montañoso colombiano: en algunas rutas de montaña puede quedarse corto y en otras pasarse, comparado con lo que muestra Google Maps. La distancia y los peajes detectados en el camino sí son confiables.</span>
+          <b>El tiempo de viaje en Ruta sigue siendo una estimación</b>
+          <span>Desde que se migró a Mapbox Directions con tráfico en tiempo real (perfil <code>driving-traffic</code>), el tiempo mostrado es más preciso que con el motor anterior (OSRM, sin tráfico). Aun así, en vías de montaña con curvas fuertes puede diferir de lo que muestra Google Maps. La distancia y los peajes detectados en el camino son más confiables que el tiempo.</span>
         </div>
       </div>
       <div class="pipeline-step">
         <div class="pipeline-num">!</div>
         <div class="pipeline-body">
           <b>Las "rutas alternas" no son todas las vías reales conocidas</b>
-          <span>Cuando existe más de una opción razonable (ej. Medellín-Bogotá), Ruta muestra hasta dos: la recomendada y una alterna. Pero OSRM solo ofrece una alterna cuando su algoritmo la considera competitiva en tiempo frente a la mejor — si una vía real es claramente más lenta, la descarta aunque exista y se use. Comprobamos el caso Medellín-Rionegro: solo devuelve la ruta por el Túnel de Oriente, y no ofrece como alterna la ruta por Las Palmas — un corredor real distinto, con sus propios peajes (Las Palmas, Variante Las Palmas) en el mismo inventario. El servidor público que usamos tampoco permite pedir "evitar peajes" (el parámetro <code>exclude</code> no está habilitado en este servidor gratuito).</span>
+          <span>Cuando existe más de una opción razonable (ej. Medellín-Bogotá), Ruta muestra hasta dos: la recomendada y una alterna. El motor de ruteo solo ofrece una alterna cuando su algoritmo la considera competitiva en tiempo frente a la mejor — si una vía real es claramente más lenta, la descarta aunque exista y se use. Comprobamos el caso Medellín-Rionegro con dos proveedores distintos (OSRM y Mapbox): ninguno ofrece como alterna la ruta por Las Palmas — un corredor real distinto, con sus propios peajes (Las Palmas, Variante Las Palmas) en el mismo inventario — así que no es una limitación de un proveedor en particular. Desde la migración a Mapbox sí puedes activar "Evitar vías de peaje si es posible" en el formulario, que fuerza una ruta distinta cuando es posible (aunque su cobertura de qué vías son de peaje en Colombia no siempre coincide exactamente con nuestro inventario de INVIAS).</span>
         </div>
       </div>
       <div class="pipeline-step">
         <div class="pipeline-num">!</div>
         <div class="pipeline-body">
           <b>El cruce ruta↔peaje puede fallar cuando dos vías corren cerca en el mapa</b>
-          <span>El método (ver paso a paso en "Qué se le hizo a los datos") mide distancia en línea recta entre cada peaje y la ruta, con un margen de 500 m. En zonas de montaña donde una vía nueva pasa muy cerca de otra distinta (ej. un túnel bajo una carretera vieja), esto puede atribuir a la ruta un peaje que en realidad está en la otra vía. Detectamos un caso real: el peaje Santa Elena (en la vía vieja Medellín-Rionegro) aparece en rutas que en realidad van por el Túnel de Oriente, que está a solo ~300 m en el plano. Probamos corregirlo comparando el nombre real de cada vía (vía OSRM), pero eso también empezaba a descartar peajes correctos en autopistas divididas (ej. Fusca y Unisabana, en la Autopista Norte, están igual de lejos —250-365 m— de la geometría de la ruta sin ser un error). No encontramos un criterio automático confiable para separar ambos casos con herramientas gratuitas, así que por ahora queda como limitación conocida en vez de una corrección que podría introducir errores nuevos.</span>
+          <span>El método (ver paso a paso en "Qué se le hizo a los datos") mide distancia en línea recta entre cada peaje y la ruta, con un margen de 500 m. En zonas de montaña donde una vía nueva pasa muy cerca de otra distinta (ej. un túnel bajo una carretera vieja), esto puede atribuir a la ruta un peaje que en realidad está en la otra vía. Detectamos un caso real: el peaje Santa Elena (en la vía vieja Medellín-Rionegro) aparece en rutas que en realidad van por el Túnel de Oriente, que está a solo ~300 m en el plano — se repite igual con Mapbox, así que no es un problema del motor de ruteo sino de nuestro método de cruce. Probamos corregirlo comparando el nombre real de cada vía (vía OSRM/Mapbox), pero eso también empezaba a descartar peajes correctos en autopistas divididas (ej. Fusca y Unisabana, en la Autopista Norte, están igual de lejos —250-365 m— de la geometría de la ruta sin ser un error). No encontramos un criterio automático confiable para separar ambos casos con herramientas gratuitas, así que por ahora queda como limitación conocida en vez de una corrección que podría introducir errores nuevos.</span>
         </div>
       </div>
     </div>

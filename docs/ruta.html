@@ -62,6 +62,10 @@
 
       <button id="calcBtn" class="calc-btn" type="button">Calcular ruta</button>
     </div>
+    <label class="avoid-tolls">
+      <input type="checkbox" id="avoidTolls">
+      Evitar vías de peaje si es posible
+    </label>
     <div class="route-status" id="routeStatus" hidden></div>
   </section>
 
@@ -80,12 +84,12 @@
       </section>
     </div>
 
-    <p class="route-note">⚠️ El tiempo de viaje es solo una referencia: no incluye tráfico, así que puede diferir bastante de la realidad. Lo que esta herramienta te da con confianza es cuánto vas a pagar de peaje en el camino.</p>
+    <p class="route-note">⚠️ El tiempo de viaje usa tráfico en tiempo real, pero sigue siendo una estimación — puede diferir de la realidad, sobre todo en vías de montaña. Lo que esta herramienta te da con más confianza es cuánto vas a pagar de peaje en el camino.</p>
     <p class="route-note">🛣️ Cuando hay más de una vía real entre dos puntos, aquí solo aparecen las que el motor de ruteo considera competitivas en tiempo — puede no incluir todas las que tú conoces. <a href="about.html#limitaciones" style="color:inherit;text-decoration:underline">Ver por qué</a>.</p>
   </div>
 
   <p style="text-align:center;color:var(--ink-faint);font-size:12.5px;padding-top:8px">
-    Ruteo: <a href="https://project-osrm.org" target="_blank" rel="noopener" style="color:inherit">OSRM</a> sobre datos de OpenStreetMap ·
+    Ruteo: <a href="https://www.mapbox.com/directions" target="_blank" rel="noopener" style="color:inherit">Mapbox Directions</a> con tráfico en tiempo real ·
     Peajes: <a href="https://www.datos.gov.co/Transporte/Peajes/68qj-5xux" target="_blank" rel="noopener" style="color:inherit">INVIAS vía datos.gov.co</a> ·
     Distancias y tiempos son estimados
   </p>

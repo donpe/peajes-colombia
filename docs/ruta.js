@@ -1,11 +1,17 @@
 /* Calculador de ruta — Peajes de Colombia
    Flujo: municipio origen/destino (autocompletado local) -> ruta real por
-   OSRM -> cruce geométrico de la ruta contra los 179 peajes -> resumen y mapa. */
+   Mapbox Directions -> cruce geométrico de la ruta contra los 179 peajes ->
+   resumen y mapa. */
 
 const money = n => n == null ? '—' : new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(n);
 const OP_COLOR = { 'INVIAS': '#2f7d52', 'Concesión': '#d1495b', 'Por definir': '#8991b3' };
 
-const OSRM_URL = 'https://router.project-osrm.org/route/v1/driving';
+// Token público de Mapbox: está pensado para vivir en código de cliente
+// (se restringe por dominio desde el dashboard de Mapbox, no ocultándolo).
+const MAPBOX_TOKEN = 'pk.eyJ1IjoiZXZlbGlvcmFtaXJleiIsImEiOiJjbXU3aDRrcDIwaXMxMndwdTk2eWdlN2hsIn0.Uyd-HgsYhu7Zj6y5K8DLUQ';
+// driving-traffic: usa tráfico en tiempo real para el tiempo estimado —
+// más preciso que un perfil sin tráfico (ver limitación documentada en Acerca).
+const MAPBOX_URL = 'https://api.mapbox.com/directions/v5/mapbox/driving-traffic';
 const MATCH_THRESHOLD_KM = 0.5;   // qué tan cerca de la ruta debe estar un peaje para contar
 const DEDUP_ALONG_KM = 0.3;       // peajes a menos de esto entre sí (a lo largo de la ruta) se consideran el mismo cruce
 
@@ -29,6 +35,11 @@ async function init() {
     // cambiar de categoría no requiere volver a pedir la ruta: ya tenemos
     // los peajes de cada alternativa, solo cambia qué tarifa se suma.
     if (rutasCalculadas.length) { renderRouteOptions(); mostrarResultados(); }
+  });
+  document.getElementById('avoidTolls').addEventListener('change', () => {
+    // esto sí cambia la ruta en sí (no solo el total), así que hay que
+    // volver a pedirla — solo si ya había una búsqueda hecha.
+    if (selOrigen && selDestino) calcularRuta();
   });
 }
 
@@ -182,30 +193,40 @@ function peajesEnRuta(routeLatLon, peajes) {
   return dedup;
 }
 
-/* ---------------- ruteo (OSRM) ---------------- */
+/* ---------------- ruteo (Mapbox Directions) ---------------- */
 
 // Pide alternativas: en muchos pares origen/destino hay más de una vía
 // razonable (ej. Medellín-Bogotá tiene una ruta corta y una más larga por
 // otro corredor), y cada una puede pasar por peajes distintos.
+// exclude=toll (opcional, activado por el usuario) evita vías de peaje
+// donde Mapbox tiene ese dato — no siempre coincide 1:1 con nuestro
+// inventario de INVIAS, pero en la práctica cambia la ruta de forma real.
 //
-// Nota sobre precisión: se probó (y se descartó) verificar cada coincidencia
-// contra el nombre real de la vía en ese punto (vía OSRM /nearest), para
-// filtrar casos donde un peaje de una vía distinta cae cerca de la ruta en
-// el plano (ej. un túnel pasando por debajo de una vía de montaña vieja).
-// Ese chequeo sí resolvía ese caso, pero también descartaba peajes
-// correctos en autopistas divididas, donde la garita puede estar a 200-400m
-// del trazado que da OSRM aunque sea la misma vía — el mismo rango de
-// distancia que el error que se quería filtrar. No hay un criterio
-// automático confiable para separar ambos casos con las herramientas
-// gratuitas disponibles; queda documentado como limitación conocida
-// (ver Acerca).
-async function obtenerRutas(origen, destino) {
-  const url = `${OSRM_URL}/${origen.lon},${origen.lat};${destino.lon},${destino.lat}?alternatives=true&overview=full&geometries=geojson`;
+// Nota sobre precisión del cruce ruta↔peaje: se probó (y se descartó, ver
+// commit anterior) verificar cada coincidencia contra el nombre real de la
+// vía en ese punto, para filtrar casos donde un peaje de una vía distinta
+// cae cerca de la ruta en el plano (ej. un túnel pasando por debajo de una
+// vía de montaña vieja). Ese chequeo resolvía ese caso puntual, pero
+// también descartaba peajes correctos en autopistas divididas, donde la
+// garita puede estar a 200-400m del trazado de la ruta aunque sea la misma
+// vía. Sigue como limitación conocida (ver Acerca) independientemente del
+// proveedor de ruteo usado.
+async function obtenerRutas(origen, destino, evitarPeajes) {
+  const params = new URLSearchParams({
+    alternatives: 'true',
+    overview: 'full',
+    geometries: 'geojson',
+    access_token: MAPBOX_TOKEN,
+  });
+  if (evitarPeajes) params.set('exclude', 'toll');
+  const url = `${MAPBOX_URL}/${origen.lon},${origen.lat};${destino.lon},${destino.lat}?${params}`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error('El servicio de ruteo no respondió (HTTP ' + res.status + ')');
   const data = await res.json();
-  if (data.code !== 'Ok' || !data.routes || !data.routes.length) {
-    throw new Error('No se encontró una ruta por carretera entre esos dos puntos.');
+  if (!res.ok || data.code !== 'Ok' || !data.routes || !data.routes.length) {
+    if (data.code === 'NoRoute' || data.code === 'NoSegment') {
+      throw new Error('No se encontró una ruta por carretera entre esos dos puntos.');
+    }
+    throw new Error(data.message || 'El servicio de ruteo no respondió correctamente.');
   }
   return data.routes.map(r => ({
     distanceKm: r.distance / 1000,
@@ -237,9 +258,10 @@ async function calcularRuta() {
   status.textContent = 'Calculando ruta…';
 
   try {
+    const evitarPeajes = document.getElementById('avoidTolls').checked;
     const [peajesRes, rutas] = await Promise.all([
       fetch('data/peajes_clean.json').then(r => r.json()),
-      obtenerRutas(selOrigen, selDestino),
+      obtenerRutas(selOrigen, selDestino, evitarPeajes),
     ]);
 
     rutasCalculadas = rutas.map(ruta => ({ ruta, matches: peajesEnRuta(ruta.latlon, peajesRes) }));
