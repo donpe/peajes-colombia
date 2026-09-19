@@ -432,20 +432,39 @@ function seleccionarRuta(idx) {
   mostrarResultados();
 }
 
+/* No se etiqueta ninguna ruta como "recomendada": Mapbox ordena sus
+   alternativas solo por tiempo de viaje, sin tener en cuenta el costo de
+   peajes, así que ese orden no es necesariamente lo que le conviene a
+   quien maneja (puede ahorrar 20 min y costar $70.000 más). En vez de
+   heredar ese orden como jerarquía, se muestran todas las rutas con las
+   mismas cifras (tiempo, distancia, peajes, costo) y una insignia objetiva
+   por cada métrica en la que una ruta es la mejor — quien la usa decide
+   el trade-off, no la app por su cuenta. */
 function renderRouteOptions() {
   const el = document.getElementById('routeOptions');
   if (rutasCalculadas.length < 2) { el.hidden = true; el.innerHTML = ''; return; }
 
   const cat = document.getElementById('catSelect').value;
-  el.hidden = false;
-  el.innerHTML = rutasCalculadas.map(({ ruta, matches }, i) => {
+  const stats = rutasCalculadas.map(({ ruta, matches }) => {
     const conTarifa = matches.filter(m => m.peaje.categorias && m.peaje.categorias[cat] != null);
-    const total = conTarifa.reduce((sum, m) => sum + m.peaje.categorias[cat], 0);
-    const label = i === 0 ? 'Ruta recomendada' : `Ruta alterna ${rutasCalculadas.length > 2 ? i : ''}`.trim();
+    return { conTarifa, total: conTarifa.reduce((sum, m) => sum + m.peaje.categorias[cat], 0) };
+  });
+  const minDuracion = Math.min(...rutasCalculadas.map(r => r.ruta.durationH));
+  const minTotal = Math.min(...stats.map(s => s.total));
+  const minPeajes = Math.min(...stats.map(s => s.conTarifa.length));
+
+  el.hidden = false;
+  el.innerHTML = rutasCalculadas.map(({ ruta }, i) => {
+    const { conTarifa, total } = stats[i];
+    const badges = [];
+    if (ruta.durationH === minDuracion) badges.push('Más rápida');
+    if (total === minTotal) badges.push('Más barata');
+    if (conTarifa.length === minPeajes) badges.push('Menos peajes');
     return `
       <button class="route-option${i === rutaActivaIdx ? ' active' : ''}" data-i="${i}">
-        <span class="route-option-label">${label}</span>
-        <span class="route-option-stats">${ruta.distanceKm.toFixed(0)} km · ${conTarifa.length} peaje${conTarifa.length === 1 ? '' : 's'} · $${money(total)}</span>
+        <span class="route-option-label">Ruta ${i + 1}</span>
+        <span class="route-option-badges">${badges.map(b => `<span class="route-badge">${b}</span>`).join('')}</span>
+        <span class="route-option-stats">${ruta.distanceKm.toFixed(0)} km · ~${formatDuracion(ruta.durationH)} · ${conTarifa.length} peaje${conTarifa.length === 1 ? '' : 's'} · $${money(total)}</span>
       </button>`;
   }).join('');
   [...el.children].forEach(btn => btn.addEventListener('click', () => seleccionarRuta(+btn.dataset.i)));

@@ -332,6 +332,11 @@ body.content-page{ overflow-y:auto; overflow-x:hidden; display:block; }
   text-transform:uppercase; letter-spacing:.03em;
 }
 .route-option-stats{ font-family:'Roboto Mono',monospace; font-size:12.5px; color:var(--ink-soft); }
+.route-option-badges{ display:flex; gap:5px; flex-wrap:wrap; min-height:19px; }
+.route-badge{
+  font-family:'Outfit',sans-serif; font-weight:600; font-size:10.5px; color:var(--accent);
+  background:var(--accent-bg); border-radius:5px; padding:2px 6px; text-transform:uppercase; letter-spacing:.02em;
+}
 
 @media (max-width:900px){
   .route-inputs{ grid-template-columns:1fr; }
