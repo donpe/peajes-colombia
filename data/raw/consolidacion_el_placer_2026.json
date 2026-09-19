@@ -1,0 +1,27 @@
+{
+  "_descripcion": "El inventario de INVIAS traía DOS filas para lo que en realidad es un solo peaje: 'EL PLACER' (id el-placer) y 'EL PLACER 2' (id el-placer-2), a 2.6km de distancia entre sí. Se detectó al investigar por qué el calculador de Ruta los mostraba como candidatos cercanos entre sí sin poder distinguirlos por nombre de vía (ambos sobre la Carretera Panamericana). La Resolución 20253040025055 de 2025 (Ministerio de Transporte) confirma que solo existe UNA estación de peaje 'El Placer', PR 49+560, proyecto Rumichaca-Pasto, operada por Concesionaria Vial Unión del Sur bajo el contrato APP 015 de 2015 — no hay 'El Placer 2'. OpenStreetMap solo tiene un peaje real mapeado en la zona (2 nodos, uno por sentido), con coordenadas que coinciden con el-placer (35m de diferencia) y no con el-placer-2 (2.6km de cualquier nodo real). Se consolidan en un solo registro.",
+  "accion": "consolidar",
+  "id_conservar": "el-placer",
+  "id_eliminar": "el-placer-2",
+  "motivo_coordenadas": "Se conservan las coordenadas de el-placer (1.06457299, -77.428397) por coincidir con los dos nodos barrier=toll_booth 'Peaje El Placer' de OpenStreetMap (Overpass API, consultado 2026-09-19, nodos 9231459132 y 12182554976, a ~35-70m). Las coordenadas de el-placer-2 (1.08728410, -77.408655) no tienen ningún peaje mapeado en OSM en un radio de 5km.",
+  "motivo_datos_operativos": "Se conservan de el-placer-2 los campos operador, operador_tipo, telefono_grua, telefono_peaje, url_ficha y codigo_peaje por estar completos (el-placer los tenía en null/'Por definir', un registro claramente incompleto en el CSV fuente de INVIAS).",
+  "campos_finales": {
+    "ubicacion": "Carretera Panamericana, límite Tangua / Yacuanquer, PR 49+560",
+    "sector": "Rumichaca - Pasto",
+    "operador": "Concesionaria Vial Unión del Sur",
+    "operador_tipo": "Concesión",
+    "pr": "49",
+    "distancia_pr_m": "560",
+    "telefono_grua": "Móvil1: 3174275839 - atiende los municipios Ipiales - Contadero e Iles Móvil 2: 3174042366 - atiende a los Municipios de Imués - Yacuanquer - Tangua y Pasto",
+    "telefono_peaje": "3173682092 – 3173310921",
+    "url_ficha": "http://hermes.invias.gov.co/carreteras/images/peajes/peaje.jpg",
+    "codigo_peaje": "9",
+    "departamento": "NARIÑO"
+  },
+  "fuente_unicidad": "Resolución 20253040025055 del 25/06/2025, Ministerio de Transporte, considerandos (cita la Resolución 20213040020955 del 20/05/2021 'por la cual se establecen las tarifas a cobrar en la estación de peaje denominada el Placer ubicada en el PR 49+560 del proyecto de asociación público privada de iniciativa pública que pertenece al corredor vial Rumichaca – Pasto') — https://mintransporte.gov.co/info/mintransporte/media/anexos/zMYue4R1.pdf",
+  "fuente_coordenadas": "OpenStreetMap, Overpass API, nodos 9231459132 y 12182554976, barrier=toll_booth name='Peaje El Placer' (consultado 2026-09-19)",
+  "fuente_tarifa": "Resolución 20253040025055 del 25/06/2025, Ministerio de Transporte, Artículo 1 — tarifas plenas vigentes del 1/07/2025 al 15/01/2026",
+  "fecha_verificacion": "2026-09-19",
+  "categorias": { "I": 19900, "II": 23200, "III": 42400, "IV": 51900, "V": 56000 },
+  "categorias_especiales_nota": "Existen tarifas diferenciales 'Categoría I Especial' ($7.800) y 'Categoría II Especial' ($10.200) solo para residentes de Tangua, Yacuanquer, Imués, Funes, Iles, Gualmatán, Contadero y Puerres — no se modela en este inventario porque no aplica a la generalidad de usuarios ni tiene una categoría equivalente en el resto del dataset."
+}

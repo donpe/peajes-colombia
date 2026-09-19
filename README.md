@@ -8,7 +8,7 @@ de INVIAS ([datos.gov.co](https://www.datos.gov.co/Transporte/Peajes/68qj-5xux))
 
 ## Qué contiene
 
-- **Mapa** ([docs/index.html](docs/index.html)) — los 180 peajes sobre un mapa real
+- **Mapa** ([docs/index.html](docs/index.html)) — los 179 peajes sobre un mapa real
   (OpenStreetMap), agrupados por cercanía, filtrables por departamento y tipo de
   operador, con ficha de detalle por peaje.
 - **Ruta** ([docs/ruta.html](docs/ruta.html)) — calculadora de viaje: origen/destino
@@ -37,12 +37,13 @@ python3 scripts/clean_data.py                      # limpia el CSV de INVIAS -> 
 python3 scripts/assign_departamentos.py            # asigna departamento por coordenada (DANE)
 python3 scripts/aplicar_correcciones_tarifarias.py # corrige tarifas que INVIAS tiene desactualizadas, con fuente citada
 python3 scripts/agregar_peajes_faltantes.py        # agrega peajes reales ausentes del inventario de INVIAS, con fuente citada
+python3 scripts/consolidar_duplicados.py           # fusiona filas que INVIAS trae duplicadas como si fueran dos peajes, con fuente citada
 python3 scripts/build_municipios.py                # genera el buscador de municipios (DIVIPOLA)
 ```
 
-⚠️ El orden importa: `aplicar_correcciones_tarifarias.py` y `agregar_peajes_faltantes.py` deben
-correr **después** de `clean_data.py` (y de `assign_departamentos.py`, si se corre), porque parten
-de `data/peajes_clean.json` ya generado.
+⚠️ El orden importa: `aplicar_correcciones_tarifarias.py`, `agregar_peajes_faltantes.py` y
+`consolidar_duplicados.py` deben correr **después** de `clean_data.py` (y de
+`assign_departamentos.py`, si se corre), porque parten de `data/peajes_clean.json` ya generado.
 Después de correr el pipeline, copiar `data/peajes_clean.json` a `docs/data/peajes_clean.json` para publicar los cambios.
 
 Cada script está documentado en su propio encabezado con el porqué de sus decisiones.

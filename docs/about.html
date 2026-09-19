@@ -33,11 +33,11 @@
 
   <section class="card">
     <h2>Qué contiene el sitio</h2>
-    <div class="card-sub">Cuatro secciones, todas alimentadas por el mismo inventario de 180 peajes</div>
+    <div class="card-sub">Cuatro secciones, todas alimentadas por el mismo inventario de 179 peajes</div>
     <div class="chart-grid">
       <div class="source-card" style="padding:0">
         <div class="source-top"><span class="source-name">🗺️ Mapa</span></div>
-        <p class="source-desc">Los 180 peajes sobre un mapa real (OpenStreetMap), agrupados por cercanía, con filtro por departamento y por tipo de operador, y ficha de detalle de cada peaje al hacer clic.</p>
+        <p class="source-desc">Los 179 peajes sobre un mapa real (OpenStreetMap), agrupados por cercanía, con filtro por departamento y por tipo de operador, y ficha de detalle de cada peaje al hacer clic.</p>
         <a class="source-link" href="index.html">Ir al mapa ↗</a>
       </div>
       <div class="source-card" style="padding:0">
@@ -128,7 +128,8 @@
         Los tiles (calles, relieve, nombres de lugares) de los mapas interactivos son de OpenStreetMap,
         un proyecto de cartografía libre y colaborativo. © colaboradores de OpenStreetMap. También se usó
         su base de datos (vía Overpass API) para verificar la coordenada exacta del peaje Sajonia
-        (nodo <code>barrier=toll_booth</code>), que no está en el inventario de INVIAS.
+        (nodo <code>barrier=toll_booth</code>), que no está en el inventario de INVIAS, y para confirmar
+        que "El Placer" y "El Placer 2" son el mismo peaje duplicado (paso 10).
       </p>
       <a class="source-link" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">Derechos de autor de OSM ↗</a>
     </div>
@@ -146,6 +147,20 @@
         cita ese decreto como fuente secundaria.
       </p>
       <a class="source-link" href="https://tuneloriente.com/wp-content/uploads/2026/01/Resolucion-incremento-peajes-2026.pdf" target="_blank" rel="noopener">Ver decreto (PDF) ↗</a>
+    </div>
+
+    <div class="source-card" style="padding:14px 0;border-bottom:1px solid var(--line-soft)">
+      <div class="source-top">
+        <span class="source-name">Resolución 20253040025055 — Ministerio de Transporte</span>
+        <span class="source-tag support">Consolidación de duplicado</span>
+      </div>
+      <p class="source-desc">
+        Resolución nacional (25 jun 2025) que fija la tarifa vigente del peaje "El Placer" (vía
+        Rumichaca-Pasto, Nariño, concesión Unión del Sur), vigente desde el 1 jul. 2025. Confirma en sus
+        considerandos que existe una sola estación de peaje con ese nombre, lo que sustenta la
+        consolidación del paso 10.
+      </p>
+      <a class="source-link" href="https://mintransporte.gov.co/info/mintransporte/media/anexos/zMYue4R1.pdf" target="_blank" rel="noopener">Ver resolución (PDF) ↗</a>
     </div>
 
     <div class="source-card" style="padding:14px 0 0">
@@ -269,6 +284,13 @@
           <span>Al agregar Sajonia se hizo más visible un problema ya documentado (ver limitación "El cruce ruta↔peaje…"): un peaje puede quedar dentro del margen de 500 m de una ruta sin estar en la vía que esa ruta realmente usa, cuando dos vías corren en paralelo muy cerca (Santa Elena/Sajonia en Medellín-Rionegro; Andes/Fusca en la Autopista Norte cerca de Chía — este segundo caso lo reportó un usuario). La solución: por cada coincidencia, Ruta consulta el nombre real de la vía en OpenStreetMap (vía OSRM <code>/nearest</code>) tanto en la coordenada del peaje como en el punto exacto de la ruta más cercano a él — si ambos nombres existen y son distintos, se descarta. Si algún tramo no tiene nombre en OSM (pasa con el nodo de peaje de Unisabana, que no está anclado a ninguna vía en el mapa), el nombre no sirve para decidir, así que se aplica una regla de distancia más estricta (150 m en vez de los 500 m normales): a esa cercanía se confía en la geometría sola, más lejos se descarta por precaución en vez de mantenerse. Esta regla general reemplazó la excepción puntual que se había agregado primero solo para Santa Elena/Sajonia.</span>
         </div>
       </div>
+      <div class="pipeline-step">
+        <div class="pipeline-num">10</div>
+        <div class="pipeline-body">
+          <b>1 peaje duplicado consolidado: EL PLACER (Nariño)</b>
+          <span>Al revisar sistemáticamente qué otros pares de peajes cercanos podían tener el mismo problema que Andes/Fusca, apareció <b>EL PLACER</b> y <b>EL PLACER 2</b> (vía Rumichaca-Pasto, Nariño) a 2.6 km entre sí, ambos sobre la misma Carretera Panamericana. A diferencia de Andes/Fusca (dos vías reales distintas), este caso resultó ser un duplicado del CSV de INVIAS: la Resolución 20253040025055 de 2025 del Ministerio de Transporte confirma que existe una sola estación "El Placer" (PR 49+560, Concesión Unión del Sur), y OpenStreetMap solo tiene un peaje real mapeado en la zona, con coordenadas que coinciden con <code>el-placer</code> y no con <code>el-placer-2</code>. Se consolidaron en un solo registro: coordenadas del que coincide con OpenStreetMap, datos de operador/teléfono del que los tenía completos, y tarifa actualizada con la tabla oficial vigente desde el 1 jul. 2025 (ninguno de los dos registros originales la tenía). Documentado en <code>data/raw/consolidacion_el_placer_2026.json</code>, aplicado por <code>scripts/consolidar_duplicados.py</code>. El inventario pasó de 180 a <b>179 peajes</b>.</span>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -293,7 +315,7 @@
         <div class="pipeline-num">!</div>
         <div class="pipeline-body">
           <b>Puede haber más tarifas desactualizadas sin detectar</b>
-          <span>Las correcciones y adiciones de los pasos 7 y 8 se encontraron validando manualmente una zona del mapa, no revisando los 180 peajes uno por uno contra su fuente real — sobre todo los administrados por una concesión departamental en vez de INVIAS directamente, que es donde aparecieron los problemas. Es posible que existan más casos similares (tarifas desactualizadas, o peajes reales que faltan) que este proyecto todavía no ha detectado ni corregido.</span>
+          <span>Las correcciones y adiciones de los pasos 7 y 8 se encontraron validando manualmente una zona del mapa, no revisando los 179 peajes uno por uno contra su fuente real — sobre todo los administrados por una concesión departamental en vez de INVIAS directamente, que es donde aparecieron los problemas. Es posible que existan más casos similares (tarifas desactualizadas, o peajes reales que faltan) que este proyecto todavía no ha detectado ni corregido.</span>
         </div>
       </div>
       <div class="pipeline-step">

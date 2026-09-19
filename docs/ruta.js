@@ -1,6 +1,6 @@
 /* Calculador de ruta — Peajes de Colombia
    Flujo: municipio origen/destino (autocompletado local) -> ruta real por
-   Mapbox Directions -> cruce geométrico de la ruta contra los 180 peajes ->
+   Mapbox Directions -> cruce geométrico de la ruta contra los 179 peajes ->
    resumen y mapa. */
 
 const money = n => n == null ? '—' : new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(n);
