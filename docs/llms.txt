@@ -1,0 +1,25 @@
+# Peajes de Colombia
+
+> Inventario abierto, mapa interactivo y calculador de ruta de los peajes de la Red Vial Nacional de Colombia, construido sobre datos públicos de INVIAS (datos.gov.co) y verificado contra fuentes oficiales (decretos y resoluciones de tarifas). Proyecto independiente de visualización de datos; no es un canal oficial de INVIAS.
+
+Cubre 179 peajes: ubicación (lat/lon), tarifas vigentes por categoría de vehículo (I a VII), operador (INVIAS o concesión privada), departamento y sector vial. Los datos son un snapshot con fecha de corte, no una fuente en vivo — ver about.html para la fecha exacta y las fuentes citadas de cada corrección.
+
+## Páginas
+
+- [Mapa](https://donpe.github.io/peajes-colombia/index.html): todos los peajes sobre un mapa real (OpenStreetMap), agrupados por cercanía, filtrables por departamento y tipo de operador, con ficha de detalle por peaje.
+- [Ruta](https://donpe.github.io/peajes-colombia/ruta.html): calculadora de viaje — dado un origen y un destino (municipios de Colombia), traza la ruta real por carretera y suma los peajes que encuentra en el camino, con su costo por categoría de vehículo.
+- [Dashboard](https://donpe.github.io/peajes-colombia/dashboard.html): análisis agregado del inventario — distribución de tarifas, INVIAS vs. concesión, ranking de operadores y distancias entre peajes.
+- [Acerca](https://donpe.github.io/peajes-colombia/about.html): de dónde sale cada dato, qué se le hizo, herramientas usadas y limitaciones conocidas (incluye las fuentes primarias citadas para cada corrección manual).
+
+## Datos
+
+- [peajes_clean.json](https://donpe.github.io/peajes-colombia/data/peajes_clean.json): el inventario completo en JSON — un objeto por peaje con id, nombre, coordenadas, tarifas por categoría, operador y departamento. Es el mismo archivo que consume el sitio; puede consultarse directamente.
+- [municipios.json](https://donpe.github.io/peajes-colombia/data/municipios.json): cabeceras municipales de Colombia (DIVIPOLA/DANE) usadas para el buscador de origen/destino de Ruta.
+
+## Fuente primaria
+
+Instituto Nacional de Vías (INVÍAS), "Peajes registrados sobre la Red Vial Nacional", vía datos.gov.co (dataset 68qj-5xux, licencia CC BY-SA 4.0): https://www.datos.gov.co/Transporte/Peajes/68qj-5xux
+
+## Código
+
+Repositorio: https://github.com/donpe/peajes-colombia — incluye el pipeline de limpieza de datos (Python) y todas las correcciones manuales documentadas con su fuente primaria en `data/raw/`.

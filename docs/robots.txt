@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://donpe.github.io/peajes-colombia/sitemap.xml

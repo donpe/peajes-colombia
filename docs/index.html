@@ -4,6 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Peajes de Colombia — Mapa interactivo</title>
+<meta name="description" content="Mapa interactivo de los 179 peajes de la Red Vial Nacional de Colombia: ubicación, tarifas por categoría de vehículo y operador, con datos abiertos de INVIAS.">
+<link rel="canonical" href="https://donpe.github.io/peajes-colombia/">
+<meta name="robots" content="index, follow">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Peajes de Colombia">
+<meta property="og:title" content="Peajes de Colombia — Mapa interactivo">
+<meta property="og:description" content="Mapa interactivo de los 179 peajes de la Red Vial Nacional de Colombia: ubicación, tarifas por categoría de vehículo y operador, con datos abiertos de INVIAS.">
+<meta property="og:url" content="https://donpe.github.io/peajes-colombia/">
+<meta property="og:locale" content="es_CO">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Peajes de Colombia — Mapa interactivo">
+<meta name="twitter:description" content="Mapa interactivo de los 179 peajes de la Red Vial Nacional de Colombia, con datos abiertos de INVIAS.">
+
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#3457d5">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -13,6 +29,36 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
 
 <link rel="stylesheet" href="style.css">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "name": "Peajes de Colombia",
+      "url": "https://donpe.github.io/peajes-colombia/",
+      "description": "Mapa interactivo, calculador de ruta y dashboard de análisis sobre el inventario de peajes de la Red Vial Nacional de Colombia.",
+      "inLanguage": "es-CO"
+    },
+    {
+      "@type": "Dataset",
+      "name": "Peajes de la Red Vial Nacional de Colombia",
+      "description": "Inventario de 179 peajes de Colombia con ubicación, tarifas por categoría de vehículo, operador y departamento, limpiado y verificado a partir del dataset público de INVIAS.",
+      "url": "https://donpe.github.io/peajes-colombia/",
+      "license": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "isBasedOn": "https://www.datos.gov.co/Transporte/Peajes/68qj-5xux",
+      "creator": { "@type": "Organization", "name": "Instituto Nacional de Vías (INVÍAS)" },
+      "distribution": {
+        "@type": "DataDownload",
+        "encodingFormat": "application/json",
+        "contentUrl": "https://donpe.github.io/peajes-colombia/data/peajes_clean.json"
+      },
+      "spatialCoverage": { "@type": "Place", "name": "Colombia" }
+    }
+  ]
+}
+</script>
 </head>
 <body>
 
