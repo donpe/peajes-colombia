@@ -4,6 +4,7 @@
    resumen y mapa. */
 
 const money = n => n == null ? '—' : new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(n);
+const titleCase = s => s.toLowerCase().replace(/(^|\s|\(|\.)([a-záéíóúñ])/g, (m, sep, c) => sep + c.toUpperCase());
 const OP_COLOR = { 'INVIAS': '#2f7d52', 'Concesión': '#d1495b', 'Por definir': '#8991b3' };
 
 // Token público de Mapbox: está pensado para vivir en código de cliente
@@ -506,7 +507,7 @@ function mostrarResultados() {
       <div class="rank-row rank-row-clickable${tarifa == null ? ' rank-row-muted' : ''}" data-i="${i}">
         <span class="rank-pos">${i + 1}</span>
         <span class="rank-name">${m.peaje.nombre_display}
-          <div class="rank-sub">km ${m.along.toFixed(0)} · ${m.peaje.operador || 'Operador no definido'}</div>
+          <div class="rank-sub">km ${m.along.toFixed(0)} · ${m.peaje.operador || 'Operador no definido'}${m.peaje.departamento ? ' · ' + titleCase(m.peaje.departamento) : ''}</div>
         </span>
         <span class="rank-val">${tarifa != null ? '$' + money(tarifa) : 'No aplica a esta categoría'}</span>
       </div>`;
@@ -570,7 +571,13 @@ function renderMapa(ruta, matches) {
 function irAPeajeEnMapa(i) {
   const marker = tollMarkers[i];
   if (!map || !marker) return;
-  map.setView(marker.getLatLng(), Math.max(map.getZoom(), 13), { animate: true });
+  const zoom = Math.max(map.getZoom(), 13);
+  // Centrar justo en el marcador deja el popup (que se abre hacia arriba)
+  // pegado al borde superior del mapa o empujando el marcador hacia abajo.
+  // Se corre el centro 90px hacia arriba en pantalla para que el conjunto
+  // marcador+popup quede balanceado en el mapa.
+  const punto = map.project(marker.getLatLng(), zoom).subtract([0, 90]);
+  map.setView(map.unproject(punto, zoom), zoom, { animate: true });
   marker.openPopup();
 }
 

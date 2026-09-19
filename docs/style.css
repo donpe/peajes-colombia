@@ -316,7 +316,7 @@ body.content-page{ overflow-y:auto; overflow-x:hidden; display:block; }
 }
 .route-grid{ grid-template-columns:1.4fr 1fr; align-items:stretch; }
 #routeMap{ height:460px; width:100%; }
-.rank-list{ max-height:420px; overflow-y:auto; }
+.rank-list{ max-height:420px; overflow-y:auto; overflow-x:hidden; }
 
 .route-options{ display:flex; gap:10px; flex-wrap:wrap; }
 .route-options[hidden]{ display:none; }
