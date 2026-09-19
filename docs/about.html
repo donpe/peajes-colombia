@@ -266,7 +266,7 @@
         <div class="pipeline-num">9</div>
         <div class="pipeline-body">
           <b>Verificación del nombre real de vía en Ruta</b>
-          <span>Al agregar Sajonia se hizo más visible un problema ya documentado (ver limitación "El cruce ruta↔peaje…"): un peaje puede quedar dentro del margen de 500 m de una ruta sin estar en la vía que esa ruta realmente usa, cuando dos vías corren en paralelo muy cerca (Santa Elena/Sajonia en Medellín-Rionegro; Andes/Fusca en la Autopista Norte cerca de Chía — este segundo caso lo reportó un usuario). La solución: por cada coincidencia, Ruta consulta el nombre real de la vía en OpenStreetMap (vía OSRM <code>/nearest</code>) tanto en la coordenada del peaje como en el punto exacto de la ruta más cercano a él — si ambos nombres existen y son distintos, se descarta. Si algún tramo no tiene nombre en OSM (pasa con Unisabana, que además solo cobra categorías V-VII), no se descarta por falta de dato. Esta regla general reemplazó la excepción puntual que se había agregado primero solo para Santa Elena/Sajonia.</span>
+          <span>Al agregar Sajonia se hizo más visible un problema ya documentado (ver limitación "El cruce ruta↔peaje…"): un peaje puede quedar dentro del margen de 500 m de una ruta sin estar en la vía que esa ruta realmente usa, cuando dos vías corren en paralelo muy cerca (Santa Elena/Sajonia en Medellín-Rionegro; Andes/Fusca en la Autopista Norte cerca de Chía — este segundo caso lo reportó un usuario). La solución: por cada coincidencia, Ruta consulta el nombre real de la vía en OpenStreetMap (vía OSRM <code>/nearest</code>) tanto en la coordenada del peaje como en el punto exacto de la ruta más cercano a él — si ambos nombres existen y son distintos, se descarta. Si algún tramo no tiene nombre en OSM (pasa con el nodo de peaje de Unisabana, que no está anclado a ninguna vía en el mapa), el nombre no sirve para decidir, así que se aplica una regla de distancia más estricta (150 m en vez de los 500 m normales): a esa cercanía se confía en la geometría sola, más lejos se descarta por precaución en vez de mantenerse. Esta regla general reemplazó la excepción puntual que se había agregado primero solo para Santa Elena/Sajonia.</span>
         </div>
       </div>
     </div>
@@ -318,10 +318,10 @@
         </div>
       </div>
       <div class="pipeline-step">
-        <div class="pipeline-num">!</div>
+        <div class="pipeline-num">✓</div>
         <div class="pipeline-body">
-          <b>El cruce ruta↔peaje puede confundir vías paralelas muy cercanas — en general ya corregido</b>
-          <span>El método (ver paso a paso en "Qué se le hizo a los datos") primero filtra por distancia en línea recta (margen de 500 m), pero eso solo no basta: dos vías paralelas y cercanas —Santa Elena/Sajonia en Medellín-Rionegro, o Andes/Fusca en la Autopista Norte cerca de Chía— pueden estar a una distancia parecida de la ruta sin ser la misma vía. Desde el paso 9 del pipeline de Ruta, cada coincidencia se verifica contra el nombre real de la vía en OpenStreetMap en dos puntos (el del peaje y el de la ruta), lo que resuelve ambos casos confirmados. Queda un caso residual: Unisabana no tiene nombre de vía en OpenStreetMap, así que no se puede verificar y se mantiene por precaución — pero solo cobra categorías V-VII, así que no afecta el total para autos (Categoría I).</span>
+          <b>El cruce ruta↔peaje puede confundir vías paralelas muy cercanas — corregido</b>
+          <span>El método (ver paso a paso en "Qué se le hizo a los datos") primero filtra por distancia en línea recta (margen de 500 m), pero eso solo no basta: dos vías paralelas y cercanas —Santa Elena/Sajonia en Medellín-Rionegro, o Andes/Fusca/Unisabana en la Autopista Norte cerca de Chía— pueden estar a una distancia parecida de la ruta sin ser la misma vía. Desde el paso 9 del pipeline de Ruta, cada coincidencia se verifica contra el nombre real de la vía en OpenStreetMap en dos puntos (el del peaje y el de la ruta). Cuando no hay nombre para comparar (pasa con el nodo de Unisabana, que no está anclado a ninguna vía en OpenStreetMap), se usa una regla de distancia más estricta (150 m en vez de 500 m) en lugar de mantener el peaje por defecto — así se resuelven Santa Elena/Sajonia, Andes/Fusca y Andes/Unisabana con el mismo mecanismo, sin excepciones puntuales por caso.</span>
         </div>
       </div>
     </div>

@@ -13,6 +13,7 @@ const MAPBOX_TOKEN = 'pk.eyJ1IjoiZXZlbGlvcmFtaXJleiIsImEiOiJjbXU3aDRrcDIwaXMxMnd
 // más preciso que un perfil sin tráfico (ver limitación documentada en Acerca).
 const MAPBOX_URL = 'https://api.mapbox.com/directions/v5/mapbox/driving-traffic';
 const MATCH_THRESHOLD_KM = 0.5;   // qué tan cerca de la ruta debe estar un peaje para contar
+const MATCH_THRESHOLD_SIN_NOMBRE_KM = 0.15; // cuando no se puede verificar el nombre de vía (ver verificarPorNombreDeVia)
 const DEDUP_ALONG_KM = 0.3;       // peajes a menos de esto entre sí (a lo largo de la ruta) se consideran el mismo cruce
 // Solo para consultar el nombre real de una vía en una coordenada (OSRM
 // /nearest hace snap al camino más cercano y devuelve su nombre de OSM).
@@ -215,9 +216,19 @@ function peajesEnRuta(routeLatLon, peajes) {
    Se verifica el nombre real de la vía en dos puntos — el del peaje, y el
    punto de la ruta más cercano a él — usando OSRM /nearest (que hace snap
    al camino más cercano en OpenStreetMap y devuelve su nombre). Si ambos
-   nombres existen y son distintos, es una vía distinta -> se descarta. Si
-   alguno de los dos no tiene nombre en OSM (frecuente en autopistas), no se
-   descarta por falta de dato: se confía en la distancia geométrica. */
+   nombres existen y son distintos, es una vía distinta -> se descarta.
+
+   Si alguno de los dos no tiene nombre en OSM (pasa con nodos de peaje que
+   no están anclados a ninguna vía, ej. Unisabana), el nombre no sirve para
+   decidir. En ese caso se usa una regla de distancia más estricta
+   (MATCH_THRESHOLD_SIN_NOMBRE_KM en vez de MATCH_THRESHOLD_KM): un peaje
+   verificado por nombre puede estar hasta 500m de la ruta (autopistas con
+   calzadas separadas), pero uno que no se pudo verificar solo se acepta si
+   está muy pegado a la línea de la ruta (<150m) — si no, es más probable
+   que sea un peaje de una vía cercana pero distinta que una coincidencia
+   real sin nombre. Se vio con Unisabana: a 314m de la ruta, misma magnitud
+   que Fusca (376m, vía distinta confirmada), muy lejos para confiar en la
+   distancia sola. */
 async function verificarPorNombreDeVia(candidatos) {
   const verificados = await Promise.all(candidatos.map(async c => {
     try {
@@ -225,12 +236,15 @@ async function verificarPorNombreDeVia(candidatos) {
         nombreDeViaEn(c.peaje.lat, c.peaje.lon),
         nombreDeViaEn(c.puntoRuta[0], c.puntoRuta[1]),
       ]);
-      if (nombrePeaje && nombreRuta && nombrePeaje !== nombreRuta) return null;
+      if (nombrePeaje && nombreRuta) {
+        return nombrePeaje === nombreRuta ? c : null;
+      }
+      // no se pudo verificar por nombre: exigir mayor cercanía geométrica
+      return c.distRuta <= MATCH_THRESHOLD_SIN_NOMBRE_KM ? c : null;
     } catch (e) {
-      // si el chequeo falla (red, timeout), no descartamos por precaución —
-      // nos quedamos con el resultado geométrico.
+      // si el chequeo falla (red, timeout), tampoco se pudo verificar
+      return c.distRuta <= MATCH_THRESHOLD_SIN_NOMBRE_KM ? c : null;
     }
-    return c;
   }));
   return verificados.filter(Boolean);
 }
@@ -431,7 +445,7 @@ function renderRouteOptions() {
     return `
       <button class="route-option${i === rutaActivaIdx ? ' active' : ''}" data-i="${i}">
         <span class="route-option-label">${label}</span>
-        <span class="route-option-stats">${ruta.distanceKm.toFixed(0)} km · ${matches.length} peaje${matches.length === 1 ? '' : 's'} · $${money(total)}</span>
+        <span class="route-option-stats">${ruta.distanceKm.toFixed(0)} km · ${conTarifa.length} peaje${conTarifa.length === 1 ? '' : 's'} · $${money(total)}</span>
       </button>`;
   }).join('');
   [...el.children].forEach(btn => btn.addEventListener('click', () => seleccionarRuta(+btn.dataset.i)));
@@ -453,7 +467,7 @@ function mostrarResultados() {
     { v: ruta.distanceKm.toFixed(0) + ' km', l: 'Distancia' },
     { v: '~' + formatDuracion(ruta.durationH), l: 'Tiempo (sin tráfico)', muted: true,
       title: 'Estimado por el motor de ruteo sin datos de tráfico real. En vías de montaña puede diferir bastante de lo que muestra Google Maps.' },
-    { v: matches.length, l: 'Peajes en la ruta' },
+    { v: conTarifa.length, l: 'Peajes en la ruta' },
     { v: '$' + money(total), l: `Total categoría ${cat}` },
   ];
   document.getElementById('routeKpis').innerHTML = kpis.map(k =>
@@ -470,12 +484,12 @@ function mostrarResultados() {
     tollsList.innerHTML = matches.map((m, i) => {
       const tarifa = m.peaje.categorias ? m.peaje.categorias[cat] : null;
       return `
-      <div class="rank-row rank-row-clickable" data-i="${i}">
+      <div class="rank-row rank-row-clickable${tarifa == null ? ' rank-row-muted' : ''}" data-i="${i}">
         <span class="rank-pos">${i + 1}</span>
         <span class="rank-name">${m.peaje.nombre_display}
           <div class="rank-sub">km ${m.along.toFixed(0)} · ${m.peaje.operador || 'Operador no definido'}</div>
         </span>
-        <span class="rank-val">${tarifa != null ? '$' + money(tarifa) : '—'}</span>
+        <span class="rank-val">${tarifa != null ? '$' + money(tarifa) : 'No aplica a esta categoría'}</span>
       </div>`;
     }).join('');
   }
