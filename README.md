@@ -62,5 +62,6 @@ Y abrir `http://localhost:8420`.
 - División político-administrativa y DIVIPOLA — DANE
 - Mapas — [OpenStreetMap](https://www.openstreetmap.org/copyright)
 - Ruteo — [Mapbox Directions](https://www.mapbox.com/directions)
+- Verificación de nombre de vía en Ruta — [OSRM](https://project-osrm.org) `/nearest` (servidor público, solo para esta consulta auxiliar)
 
 Proyecto independiente de visualización de datos abiertos. No es un canal oficial de INVIAS.

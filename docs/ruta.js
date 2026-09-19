@@ -14,16 +14,10 @@ const MAPBOX_TOKEN = 'pk.eyJ1IjoiZXZlbGlvcmFtaXJleiIsImEiOiJjbXU3aDRrcDIwaXMxMnd
 const MAPBOX_URL = 'https://api.mapbox.com/directions/v5/mapbox/driving-traffic';
 const MATCH_THRESHOLD_KM = 0.5;   // qué tan cerca de la ruta debe estar un peaje para contar
 const DEDUP_ALONG_KM = 0.3;       // peajes a menos de esto entre sí (a lo largo de la ruta) se consideran el mismo cruce
-
-// Pares de peajes verificados manualmente como la MISMA vía física (uno de
-// ellos siempre es un falso positivo geométrico, ver limitación documentada
-// en Acerca: "El cruce ruta↔peaje puede fallar cuando dos vías corren cerca
-// en el mapa"). Si ambos caen dentro del umbral en la misma ruta, se descarta
-// el que está más lejos de la línea de la ruta — nunca se cobran los dos.
-//   santa-elena / sajonia: confirmado con reverse geocoding + los pasos de
-//   OSRM/Mapbox que son la vía vieja (Vía Santa Elena) y el Túnel de Oriente
-//   respectivamente — nadie paga ambos peajes en un solo paso por ahí.
-const PEAJES_MISMA_VIA = [['santa-elena', 'sajonia']];
+// Solo para consultar el nombre real de una vía en una coordenada (OSRM
+// /nearest hace snap al camino más cercano y devuelve su nombre de OSM).
+// El ruteo en sí lo hace Mapbox; esto es una consulta auxiliar aparte.
+const OSRM_NEAREST_URL = 'https://router.project-osrm.org/nearest/v1/driving';
 
 let municipios = [];
 let selOrigen = null;   // { n, d, lat, lon }
@@ -175,16 +169,22 @@ function peajesEnRuta(routeLatLon, peajes) {
     if (p.lat == null || p.lon == null) return;
     if (p.lon < bbox[0] || p.lon > bbox[2] || p.lat < bbox[1] || p.lat > bbox[3]) return;
     const [px, py] = proj(p.lat, p.lon);
-    let best = Infinity, bestAlong = 0;
+    let best = Infinity, bestAlong = 0, bestPoint = null;
     for (let i = 0; i < pts.length - 1; i++) {
       const { d, t } = distPointToSegment(px, py, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1]);
       if (d < best) {
         best = d;
         const segLen = Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]);
         bestAlong = cum[i] + t * segLen;
+        // punto de la ruta más cercano, en lat/lon (interpolación lineal —
+        // suficiente a esta escala) — se usa para verificar el nombre de vía.
+        bestPoint = [
+          routeLatLon[i][0] + t * (routeLatLon[i + 1][0] - routeLatLon[i][0]),
+          routeLatLon[i][1] + t * (routeLatLon[i + 1][1] - routeLatLon[i][1]),
+        ];
       }
     }
-    if (best <= MATCH_THRESHOLD_KM) found.push({ peaje: p, distRuta: best, along: bestAlong });
+    if (best <= MATCH_THRESHOLD_KM) found.push({ peaje: p, distRuta: best, along: bestAlong, puntoRuta: bestPoint });
   });
 
   found.sort((a, b) => a.along - b.along);
@@ -201,20 +201,44 @@ function peajesEnRuta(routeLatLon, peajes) {
     }
   });
 
-  return quitarDuplicadosDeMismaVia(dedup);
+  return dedup;
 }
 
-function quitarDuplicadosDeMismaVia(matches) {
-  let resultado = matches;
-  PEAJES_MISMA_VIA.forEach(([idA, idB]) => {
-    const a = resultado.find(m => m.peaje.id === idA);
-    const b = resultado.find(m => m.peaje.id === idB);
-    if (a && b) {
-      const peor = a.distRuta <= b.distRuta ? b : a;
-      resultado = resultado.filter(m => m !== peor);
+/* Un peaje puede caer geométricamente cerca de la ruta (dentro del margen)
+   sin estar realmente sobre la vía que la ruta usa — pasa cuando dos vías
+   corren en paralelo muy cerca una de otra (ej. la Autopista Norte y la
+   Carretera Central del Norte cerca de Chía; o un túnel nuevo bajo una vía
+   de montaña vieja, como Santa Elena/Sajonia). La distancia geométrica sola
+   no alcanza para distinguirlo: se comprobó que el "falso positivo" y una
+   coincidencia real pueden estar a una distancia parecida de la ruta.
+
+   Se verifica el nombre real de la vía en dos puntos — el del peaje, y el
+   punto de la ruta más cercano a él — usando OSRM /nearest (que hace snap
+   al camino más cercano en OpenStreetMap y devuelve su nombre). Si ambos
+   nombres existen y son distintos, es una vía distinta -> se descarta. Si
+   alguno de los dos no tiene nombre en OSM (frecuente en autopistas), no se
+   descarta por falta de dato: se confía en la distancia geométrica. */
+async function verificarPorNombreDeVia(candidatos) {
+  const verificados = await Promise.all(candidatos.map(async c => {
+    try {
+      const [nombrePeaje, nombreRuta] = await Promise.all([
+        nombreDeViaEn(c.peaje.lat, c.peaje.lon),
+        nombreDeViaEn(c.puntoRuta[0], c.puntoRuta[1]),
+      ]);
+      if (nombrePeaje && nombreRuta && nombrePeaje !== nombreRuta) return null;
+    } catch (e) {
+      // si el chequeo falla (red, timeout), no descartamos por precaución —
+      // nos quedamos con el resultado geométrico.
     }
-  });
-  return resultado;
+    return c;
+  }));
+  return verificados.filter(Boolean);
+}
+
+async function nombreDeViaEn(lat, lon) {
+  const res = await fetch(`${OSRM_NEAREST_URL}/${lon},${lat}`);
+  const data = await res.json();
+  return normaliza((data.waypoints?.[0]?.name || '').trim()) || null;
 }
 
 /* ---------------- ruteo (Mapbox Directions) ---------------- */
@@ -369,7 +393,12 @@ async function calcularRuta() {
       obtenerRutas(selOrigen, selDestino, evitarPeajes),
     ]);
 
-    const todasLasRutas = rutas.map(ruta => ({ ruta, matches: peajesEnRuta(ruta.latlon, peajesRes) }));
+    status.textContent = 'Verificando peajes en el camino…';
+    const todasLasRutas = await Promise.all(rutas.map(async ruta => {
+      const candidatos = peajesEnRuta(ruta.latlon, peajesRes);
+      const matches = await verificarPorNombreDeVia(candidatos);
+      return { ruta, matches };
+    }));
     rutasCalculadas = filtrarAlternativasReales(todasLasRutas);
     rutaActivaIdx = 0;
     renderRouteOptions();
