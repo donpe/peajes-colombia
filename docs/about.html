@@ -142,7 +142,7 @@
       <p class="source-desc">
         Decreto departamental (16 ene 2026) que fija las tarifas 2026 de los peajes Variante Las Palmas,
         Santa Elena y Sajonia (Túnel de Oriente) de la Concesión Túnel Aburrá-Oriente S.A. Es la fuente
-        primaria de las correcciones y la adición de los pasos 7 y 8. El decreto de Pajarito (concesión
+        primaria de las correcciones y la adición del paso 3 ("Qué se le hizo a los datos"). El decreto de Pajarito (concesión
         Vía Láctea, D 2026070000085) no se consiguió en PDF; esa corrección usa una nota de prensa que
         cita ese decreto como fuente secundaria.
       </p>
@@ -188,7 +188,7 @@
         Aunque el ruteo principal se migró a Mapbox, Ruta sigue usando el servicio público de OSRM para una
         consulta auxiliar distinta: dado un punto, <code>/nearest</code> devuelve el nombre real (de OpenStreetMap)
         de la vía más cercana. Se usa para confirmar que un peaje candidato esté en la misma vía que la ruta,
-        no solo cerca en el mapa (ver paso 9 de "Qué se le hizo a los datos").
+        no solo cerca en el mapa (ver paso 4 de "Qué se le hizo a los datos").
       </p>
       <a class="source-link" href="https://project-osrm.org" target="_blank" rel="noopener">project-osrm.org ↗</a>
     </div>
@@ -224,71 +224,29 @@
       <div class="pipeline-step">
         <div class="pipeline-num">1</div>
         <div class="pipeline-body">
-          <b>Coordenadas corregidas</b>
-          <span>Las columnas sueltas "Latitud"/"Longitud" del CSV original estaban corruptas en 145 de 179 filas (duplicadas entre sí o en 0,0). Se usó siempre la columna geométrica <code>point</code>, que sí era confiable.</span>
+          <b>Limpieza estructural del CSV</b>
+          <span>El CSV de INVIAS tenía varios problemas de forma, no de fondo: coordenadas corruptas en la mayoría de filas (se usó la columna geométrica <code>point</code>, que sí era confiable), tarifas como texto ("12,200") en vez de número, ~76 formas distintas de escribir el nombre de un mismo operador agrupadas en 60 operadores reales, un par de nombres de peaje duplicados, y el departamento de cada uno (ausente en el CSV) calculado por coordenada contra los límites oficiales del DANE.</span>
         </div>
       </div>
       <div class="pipeline-step">
         <div class="pipeline-num">2</div>
         <div class="pipeline-body">
-          <b>Tarifas normalizadas</b>
-          <span>Los valores tipo "12,200" se convirtieron a números enteros; "0" se interpretó como "no aplica / exento", no como una tarifa real de cero pesos.</span>
+          <b>Municipios geolocalizados para el buscador de Ruta</b>
+          <span>Los 1.122 municipios de Colombia (DIVIPOLA, DANE) se ubicaron por su cabecera municipal en vez del centroide del polígono completo — en municipios grandes e irregulares (ej. Bogotá D.C., con la enorme zona rural de Sumapaz) el centroide de área queda lejos del casco urbano real y producía rutas y tiempos incorrectos.</span>
         </div>
       </div>
       <div class="pipeline-step">
         <div class="pipeline-num">3</div>
         <div class="pipeline-body">
-          <b>Operadores unificados</b>
-          <span>~76 variantes de texto para nombrar operadores ("Concesión Autopistas del Café", "AUTOPISTAS DEL CAFÉ S.A.S"…) se agruparon en 60 operadores reales, clasificados en INVIAS (operación estatal directa) o Concesión (operador privado).</span>
+          <b>Correcciones y adiciones verificadas contra fuente oficial</b>
+          <span>Validando el inventario contra la realidad (no solo contra el CSV) se encontraron y corrigieron varios casos: tarifas desactualizadas en peajes de concesiones departamentales, un peaje real (Sajonia, Túnel de Oriente) que nunca se había agregado al inventario de INVIAS, y un peaje duplicado (El Placer, Nariño) registrado dos veces con datos incompletos en cada copia. Cada caso está documentado por separado en <code>data/raw/</code> con su fuente primaria citada (decretos y resoluciones oficiales) y aplicado por un script propio — nunca se agrega o cambia un valor sin poder señalar de dónde salió.</span>
         </div>
       </div>
       <div class="pipeline-step">
         <div class="pipeline-num">4</div>
         <div class="pipeline-body">
-          <b>Departamento asignado por coordenada</b>
-          <span>Cada peaje se cruzó contra los límites departamentales del DANE (point-in-polygon) para saber en qué departamento cae. Un solo caso (un peaje portuario en Cartagena, con coordenadas sobre el agua) se asignó manualmente a Bolívar.</span>
-        </div>
-      </div>
-      <div class="pipeline-step">
-        <div class="pipeline-num">5</div>
-        <div class="pipeline-body">
-          <b>Nombres duplicados desambiguados</b>
-          <span>Había dos peajes llamados "SAN PEDRO" en tramos distintos; se les agregó el tramo entre paréntesis para distinguirlos sin alterar el nombre original.</span>
-        </div>
-      </div>
-      <div class="pipeline-step">
-        <div class="pipeline-num">6</div>
-        <div class="pipeline-body">
-          <b>Municipios geolocalizados por su cabecera</b>
-          <span>Para el buscador de la página Ruta, los 1.122 municipios se cruzaron con el dataset DIVIPOLA de cabeceras municipales; los ~19 sin cabecera en ese dataset usan como respaldo el centroide de área calculado del polígono del municipio (fórmula del centroide de un polígono simple, sin librerías geoespaciales externas).</span>
-        </div>
-      </div>
-      <div class="pipeline-step">
-        <div class="pipeline-num">7</div>
-        <div class="pipeline-body">
-          <b>3 tarifas corregidas manualmente</b>
-          <span>Al validar el mapa contra la zona de Rionegro se encontró que INVIAS tiene desactualizada la tarifa de <b>Santa Elena</b> (reportaba $10.000, la vigente desde el 17 ene 2026 es $15.100) y sin ningún dato a <b>Variante Las Palmas</b> (todas las categorías en 0) — ambos peajes de una concesión departamental (Gobernación de Antioquia), no de INVIAS directamente. También se corrigió <b>Pajarito</b> ($6.000 → $12.900). Los tres se corrigieron con la tabla oficial del decreto vigente (categorías I-VI/VII completas, no solo la que estaba mal), documentado con su fuente exacta en <code>data/raw/correcciones_tarifas_2026.json</code> y aplicado por <code>scripts/aplicar_correcciones_tarifarias.py</code> — nunca se inventa un valor sin una fuente primaria citada.</span>
-        </div>
-      </div>
-      <div class="pipeline-step">
-        <div class="pipeline-num">8</div>
-        <div class="pipeline-body">
-          <b>1 peaje agregado que no estaba en INVIAS: SAJONIA (Túnel de Oriente)</b>
-          <span>A diferencia del paso anterior, este peaje no estaba en el inventario de INVIAS ni desactualizado ni incompleto — simplemente nunca se agregó, así que el calculador de Ruta no cobraba nada al pasar por el Túnel de Oriente (Medellín-Rionegro), la vía principal de ese corredor desde 2021. Su nombre oficial de caseta es "Sajonia" (así lo nombra el decreto departamental y OpenStreetMap), no "Túnel de Oriente" — ese es el nombre del proyecto vial, no de la caseta. Coordenadas verificadas por OpenStreetMap (nodo con <code>barrier=toll_booth</code>, a solo 19 m de la ruta real calculada por Mapbox) y tarifa por la tabla oficial del mismo decreto del paso 7. Documentado en <code>data/raw/adiciones_peajes_2026.json</code>, aplicado por <code>scripts/agregar_peajes_faltantes.py</code>. El inventario pasó de 179 a <b>180 peajes</b>.</span>
-        </div>
-      </div>
-      <div class="pipeline-step">
-        <div class="pipeline-num">9</div>
-        <div class="pipeline-body">
-          <b>Verificación del nombre real de vía en Ruta</b>
-          <span>Al agregar Sajonia se hizo más visible un problema ya documentado (ver limitación "El cruce ruta↔peaje…"): un peaje puede quedar dentro del margen de 500 m de una ruta sin estar en la vía que esa ruta realmente usa, cuando dos vías corren en paralelo muy cerca (Santa Elena/Sajonia en Medellín-Rionegro; Andes/Fusca en la Autopista Norte cerca de Chía — este segundo caso lo reportó un usuario). La solución: por cada coincidencia, Ruta consulta el nombre real de la vía en OpenStreetMap (vía OSRM <code>/nearest</code>) tanto en la coordenada del peaje como en el punto exacto de la ruta más cercano a él — si ambos nombres existen y son distintos, se descarta. Si algún tramo no tiene nombre en OSM (pasa con el nodo de peaje de Unisabana, que no está anclado a ninguna vía en el mapa), el nombre no sirve para decidir, así que se aplica una regla de distancia más estricta (150 m en vez de los 500 m normales): a esa cercanía se confía en la geometría sola, más lejos se descarta por precaución en vez de mantenerse. Esta regla general reemplazó la excepción puntual que se había agregado primero solo para Santa Elena/Sajonia.</span>
-        </div>
-      </div>
-      <div class="pipeline-step">
-        <div class="pipeline-num">10</div>
-        <div class="pipeline-body">
-          <b>1 peaje duplicado consolidado: EL PLACER (Nariño)</b>
-          <span>Al revisar sistemáticamente qué otros pares de peajes cercanos podían tener el mismo problema que Andes/Fusca, apareció <b>EL PLACER</b> y <b>EL PLACER 2</b> (vía Rumichaca-Pasto, Nariño) a 2.6 km entre sí, ambos sobre la misma Carretera Panamericana. A diferencia de Andes/Fusca (dos vías reales distintas), este caso resultó ser un duplicado del CSV de INVIAS: la Resolución 20253040025055 de 2025 del Ministerio de Transporte confirma que existe una sola estación "El Placer" (PR 49+560, Concesión Unión del Sur), y OpenStreetMap solo tiene un peaje real mapeado en la zona, con coordenadas que coinciden con <code>el-placer</code> y no con <code>el-placer-2</code>. Se consolidaron en un solo registro: coordenadas del que coincide con OpenStreetMap, datos de operador/teléfono del que los tenía completos, y tarifa actualizada con la tabla oficial vigente desde el 1 jul. 2025 (ninguno de los dos registros originales la tenía). Documentado en <code>data/raw/consolidacion_el_placer_2026.json</code>, aplicado por <code>scripts/consolidar_duplicados.py</code>. El inventario pasó de 180 a <b>179 peajes</b>.</span>
+          <b>Verificación geométrica de peajes en Ruta</b>
+          <span>Para saber qué peajes toca una ruta calculada no basta con la cercanía en línea recta: dos vías paralelas pueden pasar a una distancia parecida sin ser la misma (ej. la Autopista Norte cerca de Chía, donde tres peajes están a menos de 3km entre sí sobre vías distintas). Por cada coincidencia cercana, Ruta confirma contra OpenStreetMap que el peaje y la ruta están sobre la misma vía nombrada; cuando eso no se puede verificar (un peaje sin nombre de vía asociado en el mapa), se exige que esté muy pegado a la ruta en vez de aceptarlo por defecto. Es una regla general, no una lista de excepciones por caso — se validó contra varios corredores reales del país.</span>
         </div>
       </div>
     </div>
@@ -300,22 +258,8 @@
       <div class="pipeline-step">
         <div class="pipeline-num">!</div>
         <div class="pipeline-body">
-          <b>Es un snapshot, no datos en vivo</b>
-          <span>Los datos corresponden al corte del 16 de septiembre de 2026. INVIAS actualiza tarifas periódicamente (usualmente indexadas al IPC); las tarifas mostradas pueden no reflejar cambios posteriores a esa fecha.</span>
-        </div>
-      </div>
-      <div class="pipeline-step">
-        <div class="pipeline-num">!</div>
-        <div class="pipeline-body">
-          <b>8 peajes sin tarifa Categoría I</b>
-          <span>Peajes marcados como siniestrados, no operativos o sin tarifa definida en el dataset original (ej. "TUNIA (SINIESTRADA)", "LA NEVERA (NO OPERATIVO)") quedan sin ese dato en vez de mostrar un valor incorrecto.</span>
-        </div>
-      </div>
-      <div class="pipeline-step">
-        <div class="pipeline-num">!</div>
-        <div class="pipeline-body">
-          <b>Puede haber más tarifas desactualizadas sin detectar</b>
-          <span>Las correcciones y adiciones de los pasos 7 y 8 se encontraron validando manualmente una zona del mapa, no revisando los 179 peajes uno por uno contra su fuente real — sobre todo los administrados por una concesión departamental en vez de INVIAS directamente, que es donde aparecieron los problemas. Es posible que existan más casos similares (tarifas desactualizadas, o peajes reales que faltan) que este proyecto todavía no ha detectado ni corregido.</span>
+          <b>Los datos no están en vivo y pueden tener vacíos sin detectar</b>
+          <span>Es un snapshot al 16 de septiembre de 2026 — INVIAS actualiza tarifas periódicamente (usualmente indexadas al IPC) y esos cambios posteriores no se reflejan automáticamente. Las correcciones ya hechas salieron de validar manualmente zonas puntuales del mapa, no de revisar cada peaje contra su fuente real uno por uno, así que es posible que existan más tarifas desactualizadas, peajes duplicados o faltantes que este proyecto todavía no ha detectado. Un puñado de peajes (marcados como siniestrados o no operativos en el dataset original) tampoco tienen tarifa de Categoría I por la misma razón: se prefiere no mostrar el dato antes que inventar un valor.</span>
         </div>
       </div>
       <div class="pipeline-step">
@@ -328,22 +272,8 @@
       <div class="pipeline-step">
         <div class="pipeline-num">!</div>
         <div class="pipeline-body">
-          <b>El tiempo de viaje en Ruta sigue siendo una estimación</b>
-          <span>Desde que se migró a Mapbox Directions con tráfico en tiempo real (perfil <code>driving-traffic</code>), el tiempo mostrado es más preciso que con el motor anterior (OSRM, sin tráfico). Aun así, en vías de montaña con curvas fuertes puede diferir de lo que muestra Google Maps. La distancia y los peajes detectados en el camino son más confiables que el tiempo.</span>
-        </div>
-      </div>
-      <div class="pipeline-step">
-        <div class="pipeline-num">!</div>
-        <div class="pipeline-body">
-          <b>Las "rutas alternas" no son todas las vías reales conocidas</b>
-          <span>Cuando existe más de una opción razonable (ej. Medellín-Bogotá), Ruta muestra hasta dos: la recomendada y una alterna. El motor de ruteo solo ofrece una alterna cuando su algoritmo la considera competitiva en tiempo frente a la mejor — si una vía real es claramente más lenta, la descarta aunque exista y se use. Comprobamos el caso Medellín-Rionegro con dos proveedores distintos (OSRM y Mapbox): ninguno ofrece como alterna la ruta por Las Palmas — un corredor real distinto, con sus propios peajes (Las Palmas, Variante Las Palmas) en el mismo inventario — así que no es una limitación de un proveedor en particular. Desde la migración a Mapbox sí puedes activar "Evitar vías de peaje si es posible" en el formulario, que fuerza una ruta distinta cuando es posible (aunque su cobertura de qué vías son de peaje en Colombia no siempre coincide exactamente con nuestro inventario de INVIAS).</span>
-        </div>
-      </div>
-      <div class="pipeline-step">
-        <div class="pipeline-num">✓</div>
-        <div class="pipeline-body">
-          <b>El cruce ruta↔peaje puede confundir vías paralelas muy cercanas — corregido</b>
-          <span>El método (ver paso a paso en "Qué se le hizo a los datos") primero filtra por distancia en línea recta (margen de 500 m), pero eso solo no basta: dos vías paralelas y cercanas —Santa Elena/Sajonia en Medellín-Rionegro, o Andes/Fusca/Unisabana en la Autopista Norte cerca de Chía— pueden estar a una distancia parecida de la ruta sin ser la misma vía. Desde el paso 9 del pipeline de Ruta, cada coincidencia se verifica contra el nombre real de la vía en OpenStreetMap en dos puntos (el del peaje y el de la ruta). Cuando no hay nombre para comparar (pasa con el nodo de Unisabana, que no está anclado a ninguna vía en OpenStreetMap), se usa una regla de distancia más estricta (150 m en vez de 500 m) en lugar de mantener el peaje por defecto — así se resuelven Santa Elena/Sajonia, Andes/Fusca y Andes/Unisabana con el mismo mecanismo, sin excepciones puntuales por caso.</span>
+          <b>La ruta calculada es una estimación, no la única posible</b>
+          <span>El tiempo de viaje usa tráfico en tiempo real (Mapbox Directions), pero en vías de montaña con curvas fuertes puede diferir de lo que muestra Google Maps — la distancia y los peajes detectados son más confiables que el tiempo. Además, el motor de ruteo solo ofrece una ruta alterna cuando la considera competitiva en tiempo: si una vía real y conocida es claramente más lenta (ej. la variante Las Palmas entre Medellín y Rionegro), no aparece como alterna aunque exista y se use — puedes activar "Evitar vías de peaje" para forzar una ruta distinta cuando aplique.</span>
         </div>
       </div>
     </div>
