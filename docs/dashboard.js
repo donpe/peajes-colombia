@@ -4,9 +4,16 @@ const money = n => n == null ? '—' : new Intl.NumberFormat('es-CO', { maximumF
 const OP_COLOR = { 'INVIAS': '#2f7d52', 'Concesión': '#d1495b', 'Por definir': '#8991b3' };
 
 const CAT_LABEL = {
-  I: 'I — Auto', II: 'II — Bus/2 ejes', III: 'III — Cam. 3 ejes',
-  IV: 'IV — Cam. 4 ejes', V: 'V — Cam. 5+ ejes',
+  I: 'I · Automóvil', II: 'II · Bus o 2 ejes', III: 'III · Camión 3 ejes',
+  IV: 'IV · Camión 4 ejes', V: 'V · Camión 5+ ejes',
 };
+
+// Resumen en texto de un histograma, para el aria-label del canvas
+// (los lectores de pantalla no ven lo que Chart.js dibuja).
+function resumenBuckets(titulo, buckets, fmt) {
+  const conDatos = buckets.filter(b => b.n > 0).map(b => `${fmt(b)}: ${b.n}`);
+  return `${titulo}. ${conDatos.join('; ')}.`;
+}
 
 function css(varName) {
   return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
@@ -57,8 +64,8 @@ function renderDistanceAnalysis(peajes) {
   const farthest = [...nearest].sort((a, b) => b.dist - a.dist)[0];
 
   document.getElementById('distKpiRow').innerHTML = [
-    { v: closest.dist.toFixed(2) + ' km', l: `Par más cercano — ${closest.p.nombre} / ${closest.neighbor.nombre}` },
-    { v: farthest.dist.toFixed(1) + ' km', l: `Peaje más aislado — ${farthest.p.nombre}` },
+    { v: closest.dist.toFixed(2) + ' km', l: `Par más cercano: ${closest.p.nombre} y ${closest.neighbor.nombre}` },
+    { v: farthest.dist.toFixed(1) + ' km', l: `Peaje más aislado: ${farthest.p.nombre}` },
     { v: avgDist.toFixed(1) + ' km', l: 'Distancia promedio al vecino más cercano' },
   ].map(k => `<div class="kpi"><b>${k.v}</b><span>${k.l}</span></div>`).join('');
 
@@ -73,23 +80,23 @@ function renderDistanceAnalysis(peajes) {
   });
 
   document.getElementById('closestPairs').innerHTML = pairs.slice(0, 10).map((n, i) => `
-    <div class="rank-row">
-      <span class="rank-pos">${i + 1}</span>
+    <li class="rank-row">
+      <span class="rank-pos" aria-hidden="true">${i + 1}</span>
       <span class="rank-name">${n.p.nombre_display} ↔ ${n.neighbor.nombre_display}
-        <div class="rank-sub">${n.p.departamento ? toTitle(n.p.departamento) : 'Departamento sin definir'}</div>
+        <span class="rank-sub">${n.p.departamento ? toTitle(n.p.departamento) : 'Departamento sin definir'}</span>
       </span>
       <span class="rank-val">${n.dist.toFixed(2)} km</span>
-    </div>`).join('');
+    </li>`).join('');
 
   const isolated = [...nearest].sort((a, b) => b.dist - a.dist).slice(0, 10);
   document.getElementById('mostIsolated').innerHTML = isolated.map((n, i) => `
-    <div class="rank-row">
-      <span class="rank-pos">${i + 1}</span>
+    <li class="rank-row">
+      <span class="rank-pos" aria-hidden="true">${i + 1}</span>
       <span class="rank-name">${n.p.nombre_display}
-        <div class="rank-sub">Más cercano: ${n.neighbor.nombre_display}</div>
+        <span class="rank-sub">Más cercano: ${n.neighbor.nombre_display}</span>
       </span>
       <span class="rank-val">${n.dist.toFixed(1)} km</span>
-    </div>`).join('');
+    </li>`).join('');
 
   renderDistanceHistogram(distances);
 }
@@ -104,7 +111,9 @@ function renderDistanceHistogram(distances) {
     buckets[idx].n++;
   });
 
-  new Chart(document.getElementById('distHistChart'), {
+  const distCanvas = document.getElementById('distHistChart');
+  distCanvas.setAttribute('aria-label', resumenBuckets('Peajes según la distancia a su vecino más cercano', buckets, b => `${b.from} a ${b.to} km`));
+  new Chart(distCanvas, {
     type: 'bar',
     data: {
       labels: buckets.map(b => `${b.from}`),
@@ -125,9 +134,9 @@ function renderDistanceHistogram(distances) {
         } } },
       },
       scales: {
-        x: { title: { display: true, text: 'km al vecino más cercano', color: css('--ink-soft'), font: { family: 'Outfit', size: 11 } },
-             grid: { display: false }, ticks: { color: css('--ink-soft'), font: { family: 'Roboto Mono', size: 10 } } },
-        y: { beginAtZero: true, ticks: { precision: 0, color: css('--ink-soft') }, grid: { color: css('--line-soft') } },
+        x: { title: { display: true, text: 'km al vecino más cercano', color: css('--ink-soft'), font: { family: 'Outfit', size: 13 } },
+             grid: { display: false }, ticks: { color: css('--ink-soft'), font: { family: 'Outfit', size: 12 } } },
+        y: { beginAtZero: true, ticks: { precision: 0, color: css('--ink-soft'), font: { family: 'Outfit', size: 12 } }, grid: { color: css('--surface-2') } },
       },
     },
   });
@@ -148,9 +157,9 @@ function renderKpis(peajes, conTarifa) {
 
   const kpis = [
     { v: peajes.length, l: 'Peajes en el inventario' },
-    { v: '$' + money(avg), l: 'Tarifa Cat. I promedio' },
-    { v: '$' + money(med), l: 'Tarifa Cat. I mediana' },
-    { v: '$' + money(maxP.tarifa_cat1), l: `Más caro — ${maxP.nombre}` },
+    { v: '$' + money(avg), l: 'Tarifa promedio, automóvil' },
+    { v: '$' + money(med), l: 'Tarifa mediana, automóvil' },
+    { v: '$' + money(maxP.tarifa_cat1), l: `Más caro: ${maxP.nombre}` },
     { v: nDeptos, l: 'Departamentos con peajes' },
   ];
   document.getElementById('kpiRow').innerHTML = kpis.map(k =>
@@ -168,7 +177,9 @@ function renderHistogram(conTarifa) {
     buckets[idx].n++;
   });
 
-  new Chart(document.getElementById('histChart'), {
+  const histCanvas = document.getElementById('histChart');
+  histCanvas.setAttribute('aria-label', resumenBuckets('Peajes por rango de tarifa de automóvil', buckets, b => `$${money(b.from)} a $${money(b.to)}`));
+  new Chart(histCanvas, {
     type: 'bar',
     data: {
       labels: buckets.map(b => `$${Math.round(b.from / 1000)}k`),
@@ -188,8 +199,8 @@ function renderHistogram(conTarifa) {
         } },
       } },
       scales: {
-        x: { grid: { display: false }, ticks: { color: css('--ink-soft'), font: { family: 'Roboto Mono', size: 10 } } },
-        y: { beginAtZero: true, ticks: { precision: 0, color: css('--ink-soft') }, grid: { color: css('--line-soft') } },
+        x: { grid: { display: false }, ticks: { color: css('--ink-soft'), font: { family: 'Outfit', size: 12 } } },
+        y: { beginAtZero: true, ticks: { precision: 0, color: css('--ink-soft'), font: { family: 'Outfit', size: 12 } }, grid: { color: css('--surface-2') } },
       },
     },
   });
@@ -205,6 +216,8 @@ function renderOperatorSplit(peajes, conTarifa) {
     return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
   };
 
+  document.getElementById('opChart').setAttribute('aria-label',
+    `Peajes por tipo de operador: INVIAS ${nInvias} (tarifa promedio $${money(avgFor('INVIAS'))}), concesión ${nConc} (tarifa promedio $${money(avgFor('Concesión'))}), por definir ${nDef}.`);
   new Chart(document.getElementById('opChart'), {
     type: 'doughnut',
     data: {
@@ -220,12 +233,12 @@ function renderOperatorSplit(peajes, conTarifa) {
       responsive: true,
       cutout: '62%',
       plugins: {
-        legend: { position: 'bottom', labels: { color: css('--ink-soft'), font: { family: 'Outfit', size: 12 }, padding: 14 } },
+        legend: { position: 'bottom', labels: { color: css('--ink'), font: { family: 'Outfit', size: 14 }, padding: 14 } },
         tooltip: {
           callbacks: {
             afterLabel: (item) => {
               const tipo = item.label.startsWith('INVIAS') ? 'INVIAS' : item.label.startsWith('Concesión') ? 'Concesión' : null;
-              return tipo ? `Tarifa Cat. I prom: $${money(avgFor(tipo))}` : '';
+              return tipo ? `Tarifa promedio automóvil: $${money(avgFor(tipo))}` : '';
             },
           },
         },
@@ -240,11 +253,11 @@ function renderRankings(conTarifa) {
   const bottom = sorted.slice(-10).reverse();
 
   const rowHtml = (p, i) => `
-    <div class="rank-row">
-      <span class="rank-pos">${i + 1}</span>
-      <span class="rank-name">${p.nombre_display}<div class="rank-sub">${p.operador || 'Operador no definido'}</div></span>
+    <li class="rank-row">
+      <span class="rank-pos" aria-hidden="true">${i + 1}</span>
+      <span class="rank-name">${p.nombre_display}<span class="rank-sub">${p.operador || 'Operador no definido'}</span></span>
       <span class="rank-val">$${money(p.tarifa_cat1)}</span>
-    </div>`;
+    </li>`;
 
   document.getElementById('topExpensive').innerHTML = top.map(rowHtml).join('');
   document.getElementById('topCheap').innerHTML = bottom.map(rowHtml).join('');
@@ -300,7 +313,7 @@ function renderCategoryBars(peajes) {
     <div class="bar-row">
       <span class="bar-label" title="${i.label}">${i.label}</span>
       <div class="bar-track"><div class="bar-fill" style="width:${(i.value / max * 100).toFixed(1)}%;background:${color}"></div></div>
-      <span class="bar-val" style="width:64px">$${money(i.value)}</span>
+      <span class="bar-val wide">$${money(i.value)}</span>
     </div>`).join('');
 }
 

@@ -19,28 +19,27 @@
 <meta name="twitter:description" content="Fuentes de datos, metodología y limitaciones del proyecto Peajes de Colombia.">
 
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<meta name="theme-color" content="#3457d5">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#171c38" media="(prefers-color-scheme: dark)">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body class="content-page">
 
+<a class="skip-link" href="#contenido">Saltar al contenido</a>
 <header id="header">
-  <div class="brand">
-    <span class="eyebrow">Datos abiertos · INVIAS</span>
-    <h1>Peajes de Colombia</h1>
-  </div>
-  <nav class="site-nav">
+  <a class="brand" href="index.html">Peajes de Colombia</a>
+  <nav class="site-nav" aria-label="Secciones del sitio">
     <a href="index.html">Mapa</a>
     <a href="ruta.html">Ruta</a>
     <a href="dashboard.html">Dashboard</a>
-    <a href="about.html" class="active">Acerca</a>
+    <a href="about.html" aria-current="page">Acerca</a>
   </nav>
 </header>
 
-<main class="page">
+<main class="page" id="contenido" tabindex="-1">
 
   <div class="page-head">
     <h1>Acerca de este proyecto</h1>
@@ -49,25 +48,25 @@
 
   <section class="card">
     <h2>Qué contiene el sitio</h2>
-    <div class="card-sub">Cuatro secciones, todas alimentadas por el mismo inventario de 179 peajes</div>
+    <p class="card-sub">Cuatro secciones, todas alimentadas por el mismo inventario de 179 peajes</p>
     <div class="chart-grid">
-      <div class="source-card" style="padding:0">
-        <div class="source-top"><span class="source-name">🗺️ Mapa</span></div>
+      <div class="source-card">
+        <h3 class="source-name">Mapa</h3>
         <p class="source-desc">Los 179 peajes sobre un mapa real (OpenStreetMap), agrupados por cercanía, con filtro por departamento y por tipo de operador, y ficha de detalle de cada peaje al hacer clic.</p>
-        <a class="source-link" href="index.html">Ir al mapa ↗</a>
+        <a class="source-link" href="index.html">Ir al mapa →</a>
       </div>
-      <div class="source-card" style="padding:0">
-        <div class="source-top"><span class="source-name">🧭 Ruta</span></div>
+      <div class="source-card">
+        <h3 class="source-name">Ruta</h3>
         <p class="source-desc">Calculadora de viaje: eliges un municipio de origen y uno de destino, se traza la ruta por carretera y se suman los peajes que encuentra en el camino, por categoría de vehículo.</p>
-        <a class="source-link" href="ruta.html">Ir a Ruta ↗</a>
+        <a class="source-link" href="ruta.html">Ir a Ruta →</a>
       </div>
-      <div class="source-card" style="padding:0">
-        <div class="source-top"><span class="source-name">📊 Dashboard</span></div>
-        <p class="source-desc">Análisis del inventario completo: distribución de tarifas, comparación INVIAS vs. concesión, ranking de operadores y de peajes por precio, y distancias entre peajes.</p>
-        <a class="source-link" href="dashboard.html">Ir al Dashboard ↗</a>
+      <div class="source-card">
+        <h3 class="source-name">Dashboard</h3>
+        <p class="source-desc">Análisis del inventario completo: distribución de tarifas, comparación entre INVIAS y concesión, ranking de operadores y de peajes por precio, y distancias entre peajes.</p>
+        <a class="source-link" href="dashboard.html">Ir al Dashboard →</a>
       </div>
-      <div class="source-card" style="padding:0">
-        <div class="source-top"><span class="source-name">ℹ️ Acerca</span></div>
+      <div class="source-card">
+        <h3 class="source-name">Acerca</h3>
         <p class="source-desc">Esta página: de dónde sale cada dato, qué se le hizo, qué herramientas se usaron para construir el sitio y qué limitaciones tiene todo lo anterior.</p>
       </div>
     </div>
@@ -75,227 +74,218 @@
 
   <section class="card">
     <h2>Fuente principal de datos</h2>
-    <div class="card-sub">El inventario de los 179 peajes (ubicación, tarifas, operador, contacto)</div>
+    <p class="card-sub">El inventario de los 179 peajes (ubicación, tarifas, operador, contacto)</p>
     <div class="source-card">
       <div class="source-top">
-        <span class="source-name">Peajes — Datos Abiertos Colombia</span>
+        <h3 class="source-name">Peajes, Datos Abiertos Colombia</h3>
         <span class="source-tag primary">Fuente primaria</span>
       </div>
       <p class="source-desc">
-        "Peajes registrados sobre la Red Vial Nacional", publicado por el
+        “Peajes registrados sobre la Red Vial Nacional”, publicado por el
         <strong>Instituto Nacional de Vías (INVÍAS)</strong> en el portal oficial de datos abiertos del
-        Estado colombiano, <strong>datos.gov.co</strong> (administrado por MinTIC). Incluye nombre,
-        ubicación, sector vial, poste de referencia, tarifas por las 9 categorías de vehículo más ~18
+        Estado colombiano, <strong translate="no">datos.gov.co</strong> (administrado por MinTIC). Incluye nombre,
+        ubicación, sector vial, poste de referencia, tarifas por las 9 categorías de vehículo más unas 18
         categorías especiales (exentos, ejes adicionales, etc.), operador y datos de contacto de cada peaje.
       </p>
-      <div class="source-meta">
-        <div><span>Publicado por</span><b style="font-family:'Outfit',sans-serif;font-weight:600">INVÍAS</b></div>
-        <div><span>Publicado el</span><b>18 oct 2024</b></div>
-        <div><span>Última actualización (origen)</span><b>19 ago 2026</b></div>
-        <div><span>Snapshot usado en este proyecto</span><b>16 sep 2026</b></div>
-        <div><span>Licencia</span><b style="font-family:'Outfit',sans-serif;font-weight:600">CC BY-SA 4.0</b></div>
-        <div><span>Identificador del dataset</span><b>68qj-5xux</b></div>
-      </div>
+      <dl class="source-meta">
+        <div><dt>Publicado por</dt><dd>INVÍAS</dd></div>
+        <div><dt>Publicado el</dt><dd>18 oct 2024</dd></div>
+        <div><dt>Última actualización (origen)</dt><dd>19 ago 2026</dd></div>
+        <div><dt>Snapshot usado en este proyecto</dt><dd>16 sep 2026</dd></div>
+        <div><dt>Licencia</dt><dd>CC BY-SA 4.0</dd></div>
+        <div><dt>Identificador del dataset</dt><dd translate="no">68qj-5xux</dd></div>
+      </dl>
       <a class="source-link" href="https://www.datos.gov.co/Transporte/Peajes/68qj-5xux" target="_blank" rel="noopener">Ver dataset en datos.gov.co ↗</a>
     </div>
   </section>
 
   <section class="card">
     <h2>Otras fuentes de datos</h2>
-    <div class="card-sub">Para ubicar los peajes en un mapa real, agruparlos por departamento y calcular rutas</div>
+    <p class="card-sub">Para ubicar los peajes en un mapa real, agruparlos por departamento y calcular rutas</p>
 
-    <div class="source-card" style="padding:14px 0;border-bottom:1px solid var(--line-soft)">
-      <div class="source-top">
-        <span class="source-name">División político-administrativa (MGN)</span>
-        <span class="source-tag support">Departamentos</span>
+    <div class="source-list">
+      <div class="source-card">
+        <div class="source-top">
+          <h3 class="source-name">División político-administrativa (MGN)</h3>
+          <span class="source-tag support">Departamentos</span>
+        </div>
+        <p class="source-desc">
+          Límites oficiales de los 33 departamentos de Colombia, del Marco Geoestadístico Nacional (MGN 2018)
+          del <strong>DANE</strong>. El dataset de INVIAS no trae el departamento de cada peaje, solo una
+          “Territorial” interna de INVIAS que no corresponde a la división político-administrativa real.
+          Por eso se cruzó cada coordenada contra estos límites (point-in-polygon) para poder ofrecer el
+          selector por departamento y el zoom del mapa.
+        </p>
+        <a class="source-link" href="https://github.com/caticoa3/colombia_mapa" target="_blank" rel="noopener">Ver geometría (GeoJSON) ↗</a>
       </div>
-      <p class="source-desc">
-        Límites oficiales de los 33 departamentos de Colombia, del Marco Geoestadístico Nacional (MGN 2018)
-        del <strong>DANE</strong>. El dataset de INVIAS no trae el departamento de cada peaje, solo una
-        "Territorial" interna de INVIAS que no corresponde a la división político-administrativa real —
-        por eso se cruzó cada coordenada contra estos límites (point-in-polygon) para poder ofrecer el
-        selector por departamento y el zoom del mapa.
-      </p>
-      <a class="source-link" href="https://github.com/caticoa3/colombia_mapa" target="_blank" rel="noopener">Ver geometría (GeoJSON) ↗</a>
-    </div>
 
-    <div class="source-card" style="padding:14px 0;border-bottom:1px solid var(--line-soft)">
-      <div class="source-top">
-        <span class="source-name">DIVIPOLA — Cabeceras municipales</span>
-        <span class="source-tag support">Buscador de Ruta</span>
+      <div class="source-card">
+        <div class="source-top">
+          <h3 class="source-name">DIVIPOLA: cabeceras municipales</h3>
+          <span class="source-tag support">Buscador de Ruta</span>
+        </div>
+        <p class="source-desc">
+          Coordenadas del casco urbano (cabecera) de 1.103 de los 1.122 municipios de Colombia, también del
+          <strong>DANE</strong> vía datos.gov.co. Es lo que alimenta el buscador predictivo de origen y destino
+          en la página <a href="ruta.html">Ruta</a>. Se prefirió el punto de la cabecera sobre el centroide
+          geográfico del municipio completo: en municipios grandes e irregulares (por ejemplo Bogotá D.C., que
+          incluye la enorme zona rural de Sumapaz) el centroide de área queda lejos del casco urbano real y
+          producía rutas y tiempos incorrectos.
+        </p>
+        <a class="source-link" href="https://www.datos.gov.co/Mapas-Nacionales/DIVIPOLA-C-digos-cabeceras-Centros-poblados/xaxy-8nri" target="_blank" rel="noopener">Ver dataset en datos.gov.co ↗</a>
       </div>
-      <p class="source-desc">
-        Coordenadas del casco urbano (cabecera) de 1.103 de los 1.122 municipios de Colombia, también del
-        <strong>DANE</strong> vía datos.gov.co. Es lo que alimenta el buscador predictivo de origen/destino
-        en la página <a href="ruta.html" style="color:inherit;text-decoration:underline">Ruta</a>. Se prefirió
-        el punto de la cabecera sobre el centroide geográfico del municipio completo: en municipios grandes e
-        irregulares (ej. Bogotá D.C., que incluye la enorme zona rural de Sumapaz) el centroide de área queda
-        lejos del casco urbano real y producía rutas y tiempos incorrectos.
-      </p>
-      <a class="source-link" href="https://www.datos.gov.co/Mapas-Nacionales/DIVIPOLA-C-digos-cabeceras-Centros-poblados/xaxy-8nri" target="_blank" rel="noopener">Ver dataset en datos.gov.co ↗</a>
-    </div>
 
-    <div class="source-card" style="padding:14px 0;border-bottom:1px solid var(--line-soft)">
-      <div class="source-top">
-        <span class="source-name">OpenStreetMap</span>
-        <span class="source-tag support">Mapa base</span>
+      <div class="source-card">
+        <div class="source-top">
+          <h3 class="source-name">OpenStreetMap</h3>
+          <span class="source-tag support">Mapa base</span>
+        </div>
+        <p class="source-desc">
+          Los tiles (calles, relieve, nombres de lugares) de los mapas interactivos son de OpenStreetMap,
+          un proyecto de cartografía libre y colaborativo. © colaboradores de OpenStreetMap. También se usó
+          su base de datos (vía Overpass API) para verificar la coordenada exacta del peaje Sajonia
+          (nodo <code>barrier=toll_booth</code>), que no está en el inventario de INVIAS, y para confirmar
+          que “El Placer” y “El Placer 2” son el mismo peaje duplicado.
+        </p>
+        <a class="source-link" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">Derechos de autor de OSM ↗</a>
       </div>
-      <p class="source-desc">
-        Los tiles (calles, relieve, nombres de lugares) de los mapas interactivos son de OpenStreetMap,
-        un proyecto de cartografía libre y colaborativo. © colaboradores de OpenStreetMap. También se usó
-        su base de datos (vía Overpass API) para verificar la coordenada exacta del peaje Sajonia
-        (nodo <code>barrier=toll_booth</code>), que no está en el inventario de INVIAS, y para confirmar
-        que "El Placer" y "El Placer 2" son el mismo peaje duplicado (paso 10).
-      </p>
-      <a class="source-link" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">Derechos de autor de OSM ↗</a>
-    </div>
 
-    <div class="source-card" style="padding:14px 0;border-bottom:1px solid var(--line-soft)">
-      <div class="source-top">
-        <span class="source-name">Decreto D 2026070000086 — Gobernación de Antioquia</span>
-        <span class="source-tag support">Corrección de tarifas</span>
+      <div class="source-card">
+        <div class="source-top">
+          <h3 class="source-name">Decreto D 2026070000086, Gobernación de Antioquia</h3>
+          <span class="source-tag support">Corrección de tarifas</span>
+        </div>
+        <p class="source-desc">
+          Decreto departamental (16 ene 2026) que fija las tarifas 2026 de los peajes Variante Las Palmas,
+          Santa Elena y Sajonia (Túnel de Oriente) de la Concesión Túnel Aburrá-Oriente S.A. Es la fuente
+          primaria de las correcciones y la adición del paso 3 de “Qué se le hizo a los datos”. El decreto de
+          Pajarito (concesión Vía Láctea, D 2026070000085) no se consiguió en PDF; esa corrección usa una nota
+          de prensa que cita ese decreto como fuente secundaria.
+        </p>
+        <a class="source-link" href="https://tuneloriente.com/wp-content/uploads/2026/01/Resolucion-incremento-peajes-2026.pdf" target="_blank" rel="noopener">Ver decreto (PDF) ↗</a>
       </div>
-      <p class="source-desc">
-        Decreto departamental (16 ene 2026) que fija las tarifas 2026 de los peajes Variante Las Palmas,
-        Santa Elena y Sajonia (Túnel de Oriente) de la Concesión Túnel Aburrá-Oriente S.A. Es la fuente
-        primaria de las correcciones y la adición del paso 3 ("Qué se le hizo a los datos"). El decreto de Pajarito (concesión
-        Vía Láctea, D 2026070000085) no se consiguió en PDF; esa corrección usa una nota de prensa que
-        cita ese decreto como fuente secundaria.
-      </p>
-      <a class="source-link" href="https://tuneloriente.com/wp-content/uploads/2026/01/Resolucion-incremento-peajes-2026.pdf" target="_blank" rel="noopener">Ver decreto (PDF) ↗</a>
-    </div>
 
-    <div class="source-card" style="padding:14px 0;border-bottom:1px solid var(--line-soft)">
-      <div class="source-top">
-        <span class="source-name">Resolución 20253040025055 — Ministerio de Transporte</span>
-        <span class="source-tag support">Consolidación de duplicado</span>
+      <div class="source-card">
+        <div class="source-top">
+          <h3 class="source-name">Resolución 20253040025055, Ministerio de Transporte</h3>
+          <span class="source-tag support">Consolidación de duplicado</span>
+        </div>
+        <p class="source-desc">
+          Resolución nacional (25 jun 2025) que fija la tarifa vigente del peaje “El Placer” (vía
+          Rumichaca-Pasto, Nariño, concesión Unión del Sur), vigente desde el 1 jul 2025. Confirma en sus
+          considerandos que existe una sola estación de peaje con ese nombre, lo que sustenta la
+          consolidación del duplicado (paso 3).
+        </p>
+        <a class="source-link" href="https://mintransporte.gov.co/info/mintransporte/media/anexos/zMYue4R1.pdf" target="_blank" rel="noopener">Ver resolución (PDF) ↗</a>
       </div>
-      <p class="source-desc">
-        Resolución nacional (25 jun 2025) que fija la tarifa vigente del peaje "El Placer" (vía
-        Rumichaca-Pasto, Nariño, concesión Unión del Sur), vigente desde el 1 jul. 2025. Confirma en sus
-        considerandos que existe una sola estación de peaje con ese nombre, lo que sustenta la
-        consolidación del paso 10.
-      </p>
-      <a class="source-link" href="https://mintransporte.gov.co/info/mintransporte/media/anexos/zMYue4R1.pdf" target="_blank" rel="noopener">Ver resolución (PDF) ↗</a>
-    </div>
 
-    <div class="source-card" style="padding:14px 0 0">
-      <div class="source-top">
-        <span class="source-name">Mapbox Directions</span>
-        <span class="source-tag support">Cálculo de ruta</span>
+      <div class="source-card">
+        <div class="source-top">
+          <h3 class="source-name" translate="no">Mapbox Directions</h3>
+          <span class="source-tag support">Cálculo de ruta</span>
+        </div>
+        <p class="source-desc">
+          Servicio de ruteo que calcula la ruta por carretera, la distancia y el tiempo estimado entre origen y
+          destino en la página Ruta, con tráfico en tiempo real (perfil <code>driving-traffic</code>) y soporte
+          real para “evitar peajes”. Se usó primero el servidor público gratuito de OSRM, pero no tenía datos de
+          tráfico ni permitía evitar peajes. Se migró a Mapbox por su capa gratuita generosa (100.000 rutas al
+          mes) y porque es seguro usar un token público directamente en el código del sitio: se restringe por
+          dominio desde el panel de Mapbox, sin necesitar un servidor propio.
+        </p>
+        <a class="source-link" href="https://www.mapbox.com/directions" target="_blank" rel="noopener">mapbox.com/directions ↗</a>
       </div>
-      <p class="source-desc">
-        Servicio de ruteo que calcula la ruta por carretera, distancia y tiempo estimado entre origen y destino
-        en la página Ruta, con tráfico en tiempo real (perfil <code>driving-traffic</code>) y soporte real para
-        "evitar peajes". Se usó primero el servidor público gratuito de OSRM, pero no tenía datos de tráfico
-        ni permitía evitar peajes; se migró a Mapbox por su capa gratuita generosa (100.000 rutas/mes) y por ser
-        seguro usar un token público directamente en el código del sitio (se restringe por dominio desde el
-        dashboard de Mapbox, sin necesitar un servidor propio).
-      </p>
-      <a class="source-link" href="https://www.mapbox.com/directions" target="_blank" rel="noopener">mapbox.com/directions ↗</a>
-    </div>
 
-    <div class="source-card" style="padding:14px 0 0;margin-top:14px;border-top:1px solid var(--line-soft)">
-      <div class="source-top">
-        <span class="source-name">OSRM — solo <code>/nearest</code></span>
-        <span class="source-tag support">Verificación de vía</span>
+      <div class="source-card">
+        <div class="source-top">
+          <h3 class="source-name">OSRM, solo <code>/nearest</code></h3>
+          <span class="source-tag support">Verificación de vía</span>
+        </div>
+        <p class="source-desc">
+          Aunque el ruteo principal se migró a Mapbox, Ruta sigue usando el servicio público de OSRM para una
+          consulta auxiliar distinta: dado un punto, <code>/nearest</code> devuelve el nombre real (de OpenStreetMap)
+          de la vía más cercana. Se usa para confirmar que un peaje candidato esté en la misma vía que la ruta,
+          no solo cerca en el mapa (ver el paso 4 de “Qué se le hizo a los datos”).
+        </p>
+        <a class="source-link" href="https://project-osrm.org" target="_blank" rel="noopener">project-osrm.org ↗</a>
       </div>
-      <p class="source-desc">
-        Aunque el ruteo principal se migró a Mapbox, Ruta sigue usando el servicio público de OSRM para una
-        consulta auxiliar distinta: dado un punto, <code>/nearest</code> devuelve el nombre real (de OpenStreetMap)
-        de la vía más cercana. Se usa para confirmar que un peaje candidato esté en la misma vía que la ruta,
-        no solo cerca en el mapa (ver paso 4 de "Qué se le hizo a los datos").
-      </p>
-      <a class="source-link" href="https://project-osrm.org" target="_blank" rel="noopener">project-osrm.org ↗</a>
     </div>
   </section>
 
   <section class="card">
     <h2>Herramientas usadas para construir el sitio</h2>
-    <div class="card-sub">Todas de código abierto, cargadas directamente en el navegador</div>
+    <p class="card-sub">Todas de código abierto, cargadas directamente en el navegador</p>
     <div class="chart-grid">
-      <div class="source-card" style="padding:0">
-        <div class="source-top"><span class="source-name">Leaflet + Leaflet.markercluster</span></div>
-        <p class="source-desc">Librería de mapas interactivos: renderiza los tiles, marcadores y agrupa peajes cercanos en clusters al alejar el zoom.</p>
+      <div class="source-card">
+        <h3 class="source-name">Leaflet y Leaflet.markercluster</h3>
+        <p class="source-desc">Librería de mapas interactivos: dibuja los tiles y los marcadores, y agrupa los peajes cercanos en clusters al alejar el zoom.</p>
       </div>
-      <div class="source-card" style="padding:0">
-        <div class="source-top"><span class="source-name">Chart.js</span></div>
-        <p class="source-desc">Gráficas del Dashboard: el histograma de distribución de tarifas y la dona INVIAS vs. Concesión.</p>
+      <div class="source-card">
+        <h3 class="source-name">Chart.js</h3>
+        <p class="source-desc">Gráficas del Dashboard: los histogramas de tarifas y de distancias, y la dona INVIAS frente a concesión.</p>
       </div>
-      <div class="source-card" style="padding:0">
-        <div class="source-top"><span class="source-name">Tipografía — Outfit</span></div>
-        <p class="source-desc">Tipografía de Google Fonts usada en todo el sitio para títulos y texto general.</p>
-      </div>
-      <div class="source-card" style="padding:0">
-        <div class="source-top"><span class="source-name">Tipografía — Roboto Mono</span></div>
-        <p class="source-desc">Tipografía monoespaciada de Google Fonts para cifras y tarifas, así alinean en columna.</p>
+      <div class="source-card">
+        <h3 class="source-name">Tipografía Outfit</h3>
+        <p class="source-desc">Tipografía de Google Fonts usada en todo el sitio. Las cifras y tarifas usan sus números tabulares, que tienen todos el mismo ancho y alinean en columna.</p>
       </div>
     </div>
   </section>
 
   <section class="card">
     <h2>Qué se le hizo a los datos</h2>
-    <div class="card-sub">Del CSV original de INVIAS a lo que ves en el mapa</div>
-    <div class="pipeline-steps">
-      <div class="pipeline-step">
-        <div class="pipeline-num">1</div>
-        <div class="pipeline-body">
+    <p class="card-sub">Del CSV original de INVIAS a lo que ves en el mapa</p>
+    <ol class="steps">
+      <li>
+        <div class="step-body">
           <b>Limpieza estructural del CSV</b>
-          <span>El CSV de INVIAS tenía varios problemas de forma, no de fondo: coordenadas corruptas en la mayoría de filas (se usó la columna geométrica <code>point</code>, que sí era confiable), tarifas como texto ("12,200") en vez de número, ~76 formas distintas de escribir el nombre de un mismo operador agrupadas en 60 operadores reales, un par de nombres de peaje duplicados, y el departamento de cada uno (ausente en el CSV) calculado por coordenada contra los límites oficiales del DANE.</span>
+          <p>El CSV de INVIAS tenía varios problemas de forma, no de fondo: coordenadas corruptas en la mayoría de filas (se usó la columna geométrica <code>point</code>, que sí era confiable), tarifas como texto (“12,200”) en vez de número, unas 76 formas distintas de escribir el nombre de un mismo operador agrupadas en 60 operadores reales, un par de nombres de peaje duplicados, y el departamento de cada uno (ausente en el CSV) calculado por coordenada contra los límites oficiales del DANE.</p>
         </div>
-      </div>
-      <div class="pipeline-step">
-        <div class="pipeline-num">2</div>
-        <div class="pipeline-body">
+      </li>
+      <li>
+        <div class="step-body">
           <b>Municipios geolocalizados para el buscador de Ruta</b>
-          <span>Los 1.122 municipios de Colombia (DIVIPOLA, DANE) se ubicaron por su cabecera municipal en vez del centroide del polígono completo — en municipios grandes e irregulares (ej. Bogotá D.C., con la enorme zona rural de Sumapaz) el centroide de área queda lejos del casco urbano real y producía rutas y tiempos incorrectos.</span>
+          <p>Los 1.122 municipios de Colombia (DIVIPOLA, DANE) se ubicaron por su cabecera municipal en vez del centroide del polígono completo. En municipios grandes e irregulares (por ejemplo Bogotá D.C., con la enorme zona rural de Sumapaz) el centroide de área queda lejos del casco urbano real y producía rutas y tiempos incorrectos.</p>
         </div>
-      </div>
-      <div class="pipeline-step">
-        <div class="pipeline-num">3</div>
-        <div class="pipeline-body">
+      </li>
+      <li>
+        <div class="step-body">
           <b>Correcciones y adiciones verificadas contra fuente oficial</b>
-          <span>Validando el inventario contra la realidad (no solo contra el CSV) se encontraron y corrigieron varios casos: tarifas desactualizadas en peajes de concesiones departamentales, un peaje real (Sajonia, Túnel de Oriente) que nunca se había agregado al inventario de INVIAS, y un peaje duplicado (El Placer, Nariño) registrado dos veces con datos incompletos en cada copia. Cada caso está documentado por separado en <code>data/raw/</code> con su fuente primaria citada (decretos y resoluciones oficiales) y aplicado por un script propio — nunca se agrega o cambia un valor sin poder señalar de dónde salió.</span>
+          <p>Validando el inventario contra la realidad (no solo contra el CSV) se encontraron y corrigieron varios casos: tarifas desactualizadas en peajes de concesiones departamentales, un peaje real (Sajonia, Túnel de Oriente) que nunca se había agregado al inventario de INVIAS, y un peaje duplicado (El Placer, Nariño) registrado dos veces con datos incompletos en cada copia. Cada caso está documentado por separado en <code>data/raw/</code> con su fuente primaria citada (decretos y resoluciones oficiales) y aplicado por un script propio. Nunca se agrega o cambia un valor sin poder señalar de dónde salió.</p>
         </div>
-      </div>
-      <div class="pipeline-step">
-        <div class="pipeline-num">4</div>
-        <div class="pipeline-body">
+      </li>
+      <li>
+        <div class="step-body">
           <b>Verificación geométrica de peajes en Ruta</b>
-          <span>Para saber qué peajes toca una ruta calculada no basta con la cercanía en línea recta: dos vías paralelas pueden pasar a una distancia parecida sin ser la misma (ej. la Autopista Norte cerca de Chía, donde tres peajes están a menos de 3km entre sí sobre vías distintas). Por cada coincidencia cercana, Ruta confirma contra OpenStreetMap que el peaje y la ruta están sobre la misma vía nombrada; cuando eso no se puede verificar (un peaje sin nombre de vía asociado en el mapa), se exige que esté muy pegado a la ruta en vez de aceptarlo por defecto. Es una regla general, no una lista de excepciones por caso — se validó contra varios corredores reales del país.</span>
+          <p>Para saber qué peajes toca una ruta calculada no basta con la cercanía en línea recta: dos vías paralelas pueden pasar a una distancia parecida sin ser la misma (por ejemplo la Autopista Norte cerca de Chía, donde tres peajes están a menos de 3 km entre sí sobre vías distintas). Por cada coincidencia cercana, Ruta confirma contra OpenStreetMap que el peaje y la ruta están sobre la misma vía nombrada. Cuando eso no se puede verificar (un peaje sin nombre de vía asociado en el mapa), se exige que esté muy pegado a la ruta en vez de aceptarlo por defecto. Es una regla general, no una lista de excepciones por caso, y se validó contra varios corredores reales del país.</p>
         </div>
-      </div>
-    </div>
+      </li>
+    </ol>
   </section>
 
   <section class="card" id="limitaciones">
     <h2>Limitaciones a tener en cuenta</h2>
-    <div class="pipeline-steps">
-      <div class="pipeline-step">
-        <div class="pipeline-num">!</div>
-        <div class="pipeline-body">
+    <ul class="steps">
+      <li>
+        <div class="step-body">
           <b>Los datos no están en vivo y pueden tener vacíos sin detectar</b>
-          <span>Es un snapshot al 16 de septiembre de 2026 — INVIAS actualiza tarifas periódicamente (usualmente indexadas al IPC) y esos cambios posteriores no se reflejan automáticamente. Las correcciones ya hechas salieron de validar manualmente zonas puntuales del mapa, no de revisar cada peaje contra su fuente real uno por uno, así que es posible que existan más tarifas desactualizadas, peajes duplicados o faltantes que este proyecto todavía no ha detectado. Un puñado de peajes (marcados como siniestrados o no operativos en el dataset original) tampoco tienen tarifa de Categoría I por la misma razón: se prefiere no mostrar el dato antes que inventar un valor.</span>
+          <p>Es un snapshot al 16 de septiembre de 2026. INVIAS actualiza tarifas periódicamente (usualmente indexadas al IPC) y esos cambios posteriores no se reflejan automáticamente. Las correcciones ya hechas salieron de validar manualmente zonas puntuales del mapa, no de revisar cada peaje contra su fuente real uno por uno, así que es posible que existan más tarifas desactualizadas, peajes duplicados o faltantes que este proyecto todavía no ha detectado. Un puñado de peajes (marcados como siniestrados o no operativos en el dataset original) tampoco tienen tarifa de categoría I por la misma razón: se prefiere no mostrar el dato antes que inventar un valor.</p>
         </div>
-      </div>
-      <div class="pipeline-step">
-        <div class="pipeline-num">!</div>
-        <div class="pipeline-body">
+      </li>
+      <li>
+        <div class="step-body">
           <b>Cobertura solo de la Red Vial Nacional</b>
-          <span>Este inventario cubre los peajes de la red administrada por INVIAS y sus concesiones. No incluye peajes urbanos ni de algunas vías departamentales o municipales por fuera de esa red.</span>
+          <p>Este inventario cubre los peajes de la red administrada por INVIAS y sus concesiones. No incluye peajes urbanos ni de algunas vías departamentales o municipales por fuera de esa red.</p>
         </div>
-      </div>
-      <div class="pipeline-step">
-        <div class="pipeline-num">!</div>
-        <div class="pipeline-body">
+      </li>
+      <li>
+        <div class="step-body">
           <b>La ruta calculada es una estimación, no la única posible</b>
-          <span>El tiempo de viaje usa tráfico en tiempo real (Mapbox Directions), pero en vías de montaña con curvas fuertes puede diferir de lo que muestra Google Maps — la distancia y los peajes detectados son más confiables que el tiempo. Además, el motor de ruteo solo ofrece una ruta alterna cuando la considera competitiva en tiempo: si una vía real y conocida es claramente más lenta (ej. la variante Las Palmas entre Medellín y Rionegro), no aparece como alterna aunque exista y se use — puedes activar "Evitar vías de peaje" para forzar una ruta distinta cuando aplique.</span>
+          <p>El tiempo de viaje usa tráfico en tiempo real (Mapbox Directions), pero en vías de montaña con curvas fuertes puede diferir de lo que muestra Google Maps; la distancia y los peajes detectados son más confiables que el tiempo. Además, el motor de ruteo solo ofrece una ruta alterna cuando la considera competitiva en tiempo: si una vía real y conocida es claramente más lenta (por ejemplo la variante Las Palmas entre Medellín y Rionegro), no aparece como alterna aunque exista y se use. Puedes activar “Evitar vías de peaje” para forzar una ruta distinta cuando aplique.</p>
         </div>
-      </div>
-    </div>
+      </li>
+    </ul>
   </section>
 
-  <p style="text-align:center;color:var(--ink-faint);font-size:12.5px;padding-top:8px">
+  <p class="page-foot">
     Proyecto independiente de visualización de datos abiertos · No es un canal oficial de INVIAS
   </p>
 

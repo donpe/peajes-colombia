@@ -37,17 +37,45 @@ async function init() {
   setupAutocomplete('inputDestino', 'listDestino', m => { selDestino = m; });
 
   document.getElementById('swapBtn').addEventListener('click', swapOrigenDestino);
-  document.getElementById('calcBtn').addEventListener('click', calcularRuta);
+  document.getElementById('routeForm').addEventListener('submit', e => { e.preventDefault(); calcularRuta(); });
   document.getElementById('catSelect').addEventListener('change', () => {
     // cambiar de categoría no requiere volver a pedir la ruta: ya tenemos
     // los peajes de cada alternativa, solo cambia qué tarifa se suma.
-    if (rutasCalculadas.length) { renderRouteOptions(); mostrarResultados(); }
+    if (rutasCalculadas.length) { renderRouteOptions(); mostrarResultados(); guardarEstadoEnUrl(); }
   });
   document.getElementById('avoidTolls').addEventListener('change', () => {
     // esto sí cambia la ruta en sí (no solo el total), así que hay que
     // volver a pedirla — solo si ya había una búsqueda hecha.
     if (selOrigen && selDestino) calcularRuta();
   });
+
+  // una ruta compartida (?o=…&d=…&cat=…&evitar=1) se calcula al abrir la página
+  const q = new URLSearchParams(location.search);
+  const o = buscarPorEtiqueta(q.get('o')), d = buscarPorEtiqueta(q.get('d'));
+  if (['I', 'II', 'III', 'IV', 'V'].includes(q.get('cat'))) document.getElementById('catSelect').value = q.get('cat');
+  if (q.get('evitar') === '1') document.getElementById('avoidTolls').checked = true;
+  if (o) { selOrigen = o; document.getElementById('inputOrigen').value = etiqueta(o); }
+  if (d) { selDestino = d; document.getElementById('inputDestino').value = etiqueta(d); }
+  if (o && d) calcularRuta();
+}
+
+/* ---------------- estado en la URL ---------------- */
+
+const etiqueta = m => `${m.n}, ${m.d}`;
+
+function buscarPorEtiqueta(txt) {
+  if (!txt) return null;
+  const nt = normaliza(txt);
+  return municipios.find(m => normaliza(etiqueta(m)) === nt) || null;
+}
+
+function guardarEstadoEnUrl() {
+  const q = new URLSearchParams();
+  if (selOrigen) q.set('o', etiqueta(selOrigen));
+  if (selDestino) q.set('d', etiqueta(selDestino));
+  q.set('cat', document.getElementById('catSelect').value);
+  if (document.getElementById('avoidTolls').checked) q.set('evitar', '1');
+  history.replaceState(null, '', `?${q}`);
 }
 
 /* ---------------- autocompletado ---------------- */
@@ -75,17 +103,31 @@ function setupAutocomplete(inputId, listId, onSelect) {
   let items = [];
   let hlIndex = -1;
 
+  // combobox ARIA: el foco se queda en el input y la opción resaltada se
+  // anuncia con aria-activedescendant
+  function setOpen(open) {
+    list.hidden = !open;
+    input.setAttribute('aria-expanded', String(open));
+    if (!open) input.removeAttribute('aria-activedescendant');
+  }
+
   function render() {
     if (!items.length) {
-      list.innerHTML = `<div class="ac-empty">Sin resultados</div>`;
-      list.hidden = false;
+      list.innerHTML = `<li class="ac-empty" role="option" aria-disabled="true">Sin resultados. Revisa la ortografía o prueba con otro municipio.</li>`;
+      setOpen(true);
       return;
     }
     list.innerHTML = items.map((m, i) => `
-      <div class="ac-item${i === hlIndex ? ' hl' : ''}" data-i="${i}">
+      <li class="ac-item" role="option" id="${listId}-${i}" aria-selected="${i === hlIndex}" data-i="${i}">
         <b>${m.n}</b><span>${m.d}</span>
-      </div>`).join('');
-    list.hidden = false;
+      </li>`).join('');
+    setOpen(true);
+    if (hlIndex >= 0) {
+      input.setAttribute('aria-activedescendant', `${listId}-${hlIndex}`);
+      document.getElementById(`${listId}-${hlIndex}`).scrollIntoView({ block: 'nearest' });
+    } else {
+      input.removeAttribute('aria-activedescendant');
+    }
     [...list.children].forEach(el => {
       el.addEventListener('mousedown', (e) => {
         e.preventDefault();
@@ -95,9 +137,9 @@ function setupAutocomplete(inputId, listId, onSelect) {
   }
 
   function select(m) {
-    input.value = `${m.n}, ${m.d}`;
+    input.value = etiqueta(m);
     onSelect(m);
-    list.hidden = true;
+    setOpen(false);
     items = [];
   }
 
@@ -105,18 +147,20 @@ function setupAutocomplete(inputId, listId, onSelect) {
     onSelect(null);
     items = buscarMunicipios(input.value);
     hlIndex = -1;
-    if (input.value.trim()) render(); else list.hidden = true;
+    if (input.value.trim()) render(); else setOpen(false);
   });
 
   input.addEventListener('keydown', (e) => {
     if (list.hidden || !items.length) return;
     if (e.key === 'ArrowDown') { e.preventDefault(); hlIndex = Math.min(hlIndex + 1, items.length - 1); render(); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); hlIndex = Math.max(hlIndex - 1, 0); render(); }
-    else if (e.key === 'Enter') { e.preventDefault(); if (hlIndex >= 0) select(items[hlIndex]); }
-    else if (e.key === 'Escape') { list.hidden = true; }
+    // Enter sin opción resaltada toma la primera sugerencia (con la lista
+    // cerrada, Enter envía el formulario y calcula la ruta)
+    else if (e.key === 'Enter') { e.preventDefault(); select(items[Math.max(hlIndex, 0)]); }
+    else if (e.key === 'Escape') { setOpen(false); }
   });
 
-  input.addEventListener('blur', () => setTimeout(() => { list.hidden = true; }, 120));
+  input.addEventListener('blur', () => setTimeout(() => setOpen(false), 120));
 }
 
 function swapOrigenDestino() {
@@ -384,12 +428,12 @@ function filtrarAlternativasReales(rutas) {
 async function calcularRuta() {
   const status = document.getElementById('routeStatus');
   const btn = document.getElementById('calcBtn');
-  status.hidden = false;
   status.className = 'route-status';
 
   if (!selOrigen || !selDestino) {
     status.textContent = 'Elige un origen y un destino de la lista de sugerencias.';
     status.className = 'route-status error';
+    document.getElementById(selOrigen ? 'inputDestino' : 'inputOrigen').focus();
     return;
   }
   if (selOrigen.n === selDestino.n && selOrigen.d === selDestino.d) {
@@ -418,7 +462,9 @@ async function calcularRuta() {
     rutaActivaIdx = 0;
     renderRouteOptions();
     mostrarResultados();
-    status.hidden = true;
+    guardarEstadoEnUrl();
+    const n = rutasCalculadas.length;
+    status.textContent = n > 1 ? `Listo: ${n} rutas posibles.` : 'Listo.';
   } catch (err) {
     status.textContent = err.message || 'No se pudo calcular la ruta. Intenta de nuevo.';
     status.className = 'route-status error';
@@ -462,7 +508,7 @@ function renderRouteOptions() {
     if (total === minTotal) badges.push('Más barata');
     if (conTarifa.length === minPeajes) badges.push('Menos peajes');
     return `
-      <button class="route-option${i === rutaActivaIdx ? ' active' : ''}" data-i="${i}">
+      <button type="button" class="route-option" aria-pressed="${i === rutaActivaIdx}" data-i="${i}">
         <span class="route-option-label">Ruta ${i + 1}</span>
         <span class="route-option-badges">${badges.map(b => `<span class="route-badge">${b}</span>`).join('')}</span>
         <span class="route-option-stats">${ruta.distanceKm.toFixed(0)} km · ~${formatDuracion(ruta.durationH)} · ${conTarifa.length} peaje${conTarifa.length === 1 ? '' : 's'} · $${money(total)}</span>
@@ -485,13 +531,12 @@ function mostrarResultados() {
 
   const kpis = [
     { v: ruta.distanceKm.toFixed(0) + ' km', l: 'Distancia' },
-    { v: '~' + formatDuracion(ruta.durationH), l: 'Tiempo (sin tráfico)', muted: true,
-      title: 'Estimado por el motor de ruteo sin datos de tráfico real. En vías de montaña puede diferir bastante de lo que muestra Google Maps.' },
+    { v: '~' + formatDuracion(ruta.durationH), l: 'Tiempo estimado con tráfico' },
     { v: conTarifa.length, l: 'Peajes en la ruta' },
-    { v: '$' + money(total), l: `Total categoría ${cat}` },
+    { v: '$' + money(total), l: `Total en peajes, categoría ${cat}` },
   ];
   document.getElementById('routeKpis').innerHTML = kpis.map(k =>
-    `<div class="kpi${k.muted ? ' kpi-muted' : ''}"${k.title ? ` title="${k.title}"` : ''}><b>${k.v}</b><span>${k.l}</span></div>`
+    `<div class="kpi"><b>${k.v}</b><span>${k.l}</span></div>`
   ).join('');
 
   document.getElementById('tollsSub').textContent =
@@ -499,26 +544,26 @@ function mostrarResultados() {
 
   const tollsList = document.getElementById('tollsList');
   if (!matches.length) {
-    tollsList.innerHTML = `<div class="ac-empty">No se detectaron peajes en esta ruta.</div>`;
+    tollsList.innerHTML = `<p class="ac-empty">No se detectaron peajes en esta ruta.</p>`;
   } else {
-    tollsList.innerHTML = matches.map((m, i) => {
+    tollsList.innerHTML = '<ol class="rank-list">' + matches.map((m, i) => {
       const tarifa = m.peaje.categorias ? m.peaje.categorias[cat] : null;
       return `
-      <div class="rank-row rank-row-clickable${tarifa == null ? ' rank-row-muted' : ''}" data-i="${i}">
-        <span class="rank-pos">${i + 1}</span>
+      <li><button type="button" class="rank-row rank-btn${tarifa == null ? ' rank-row-muted' : ''}" data-i="${i}">
+        <span class="rank-pos" aria-hidden="true">${i + 1}</span>
         <span class="rank-name">${m.peaje.nombre_display}
-          <div class="rank-sub">km ${m.along.toFixed(0)} · ${m.peaje.operador || 'Operador no definido'}${m.peaje.departamento ? ' · ' + titleCase(m.peaje.departamento) : ''}</div>
+          <span class="rank-sub">km ${m.along.toFixed(0)} · ${m.peaje.operador || 'Operador no definido'}${m.peaje.departamento ? ' · ' + titleCase(m.peaje.departamento) : ''}</span>
         </span>
         <span class="rank-val">${tarifa != null ? '$' + money(tarifa) : 'No aplica a esta categoría'}</span>
-      </div>`;
-    }).join('');
+      </button></li>`;
+    }).join('') + '</ol>';
   }
 
   renderMapa(ruta, matches);
 
   // clic en un peaje de la lista -> lo centra en el mapa y abre su ficha
   // (los marcadores ya existen porque renderMapa() acaba de crearlos)
-  tollsList.querySelectorAll('.rank-row-clickable').forEach(el => {
+  tollsList.querySelectorAll('.rank-btn').forEach(el => {
     el.addEventListener('click', () => irAPeajeEnMapa(+el.dataset.i));
   });
 }
@@ -585,18 +630,18 @@ function irAPeajeEnMapa(i) {
 // con el km de la ruta como línea extra, propia de este contexto.
 function popupHtml(p, along, cat) {
   const tarifa = p.categorias ? p.categorias[cat] : null;
-  return `<div style="font-family:'Outfit',sans-serif;font-size:13px;min-width:180px">
-    <div style="font-weight:700;font-family:'Outfit',sans-serif;font-size:15px">${p.nombre_display}</div>
-    <div style="color:#666;margin:2px 0 6px">${p.operador || 'Operador no definido'}</div>
-    <div style="font-family:'Roboto Mono',monospace;font-weight:600">Categoría ${cat}: ${tarifa != null ? '$' + money(tarifa) : '—'}</div>
-    <div style="color:#888;font-size:12px;margin-top:4px">km ${along.toFixed(0)} de la ruta</div>
+  return `<div class="popup">
+    <div class="popup-name">${p.nombre_display}</div>
+    <div class="popup-op">${p.operador || 'Operador no definido'}</div>
+    <div class="popup-price">Categoría ${cat}: ${tarifa != null ? '$' + money(tarifa) : '—'}</div>
+    <div class="popup-km">km ${along.toFixed(0)} de la ruta</div>
   </div>`;
 }
 
 function endpointIcon(color, letter) {
   return L.divIcon({
     className: '',
-    html: `<div style="width:24px;height:24px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-family:Outfit,sans-serif;font-weight:700;font-size:12px">${letter}</div>`,
+    html: `<div style="width:24px;height:24px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-family:Outfit,sans-serif;font-weight:700;font-size:13px">${letter}</div>`,
     iconSize: [24, 24],
     iconAnchor: [12, 12],
   });
@@ -611,7 +656,7 @@ function tollIcon(n, color) {
       <path d="M13 0.5C6.1 0.5 0.5 6.1 0.5 13c0 9.2 12.5 20 12.5 20s12.5-10.8 12.5-20C25.5 6.1 19.9 0.5 13 0.5z"
             fill="${color}" stroke="#fff" stroke-width="1.5"/>
       <circle cx="13" cy="13" r="7" fill="#fff"/>
-      <text x="13" y="17.5" text-anchor="middle" font-family="'Roboto Mono', monospace"
+      <text x="13" y="17.5" text-anchor="middle" font-family="Outfit, sans-serif"
             font-weight="700" font-size="11" fill="${color}">${n}</text>
     </svg>`;
   return L.divIcon({

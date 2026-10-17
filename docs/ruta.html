@@ -19,94 +19,95 @@
 <meta name="twitter:description" content="Calcula cuánto vas a pagar de peaje en tu viaje por Colombia, por categoría de vehículo.">
 
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<meta name="theme-color" content="#3457d5">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#171c38" media="(prefers-color-scheme: dark)">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <link rel="stylesheet" href="style.css">
 </head>
 <body class="content-page">
 
+<a class="skip-link" href="#contenido">Saltar al contenido</a>
 <header id="header">
-  <div class="brand">
-    <span class="eyebrow">Datos abiertos · INVIAS</span>
-    <h1>Peajes de Colombia</h1>
-  </div>
-  <nav class="site-nav">
+  <a class="brand" href="index.html">Peajes de Colombia</a>
+  <nav class="site-nav" aria-label="Secciones del sitio">
     <a href="index.html">Mapa</a>
-    <a href="ruta.html" class="active">Ruta</a>
+    <a href="ruta.html" aria-current="page">Ruta</a>
     <a href="dashboard.html">Dashboard</a>
     <a href="about.html">Acerca</a>
   </nav>
 </header>
 
-<main class="page">
+<main class="page" id="contenido" tabindex="-1">
 
   <div class="page-head">
     <h1>Calculador de ruta</h1>
-    <p>Elige un municipio de origen y uno de destino: trazamos la ruta por carretera y sumamos los peajes que encuentra en el camino.</p>
+    <p>Elige un municipio de origen y uno de destino. Trazamos la ruta por carretera y sumamos los peajes que encuentra en el camino.</p>
   </div>
 
-  <section class="card route-form">
+  <form class="card route-form" id="routeForm" novalidate>
     <div class="route-inputs">
       <div class="autocomplete" id="acOrigen">
         <label for="inputOrigen">Origen</label>
-        <input id="inputOrigen" type="text" placeholder="Ej. Bogotá D.C." autocomplete="off">
-        <div class="ac-list" id="listOrigen" hidden></div>
+        <input id="inputOrigen" name="origen" type="text" placeholder="Ej. Bogotá…" autocomplete="off" spellcheck="false"
+               role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="listOrigen">
+        <ul class="ac-list" id="listOrigen" role="listbox" aria-label="Municipios sugeridos" hidden></ul>
       </div>
 
       <button id="swapBtn" class="swap-btn" type="button" aria-label="Intercambiar origen y destino" title="Intercambiar">⇅</button>
 
       <div class="autocomplete" id="acDestino">
         <label for="inputDestino">Destino</label>
-        <input id="inputDestino" type="text" placeholder="Ej. Medellín" autocomplete="off">
-        <div class="ac-list" id="listDestino" hidden></div>
+        <input id="inputDestino" name="destino" type="text" placeholder="Ej. Medellín…" autocomplete="off" spellcheck="false"
+               role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="listDestino">
+        <ul class="ac-list" id="listDestino" role="listbox" aria-label="Municipios sugeridos" hidden></ul>
       </div>
 
       <div class="cat-select">
         <label for="catSelect">Categoría de vehículo</label>
-        <select id="catSelect">
-          <option value="I">I — Automóvil</option>
-          <option value="II">II — Bus / 2 ejes</option>
-          <option value="III">III — Camión 3 ejes</option>
-          <option value="IV">IV — Camión 4 ejes</option>
-          <option value="V">V — Camión 5+ ejes</option>
+        <select id="catSelect" name="categoria">
+          <option value="I">I · Automóvil</option>
+          <option value="II">II · Bus o 2 ejes</option>
+          <option value="III">III · Camión 3 ejes</option>
+          <option value="IV">IV · Camión 4 ejes</option>
+          <option value="V">V · Camión 5+ ejes</option>
         </select>
       </div>
 
-      <button id="calcBtn" class="calc-btn" type="button">Calcular ruta</button>
+      <button id="calcBtn" class="calc-btn" type="submit">Calcular ruta</button>
     </div>
     <label class="avoid-tolls">
-      <input type="checkbox" id="avoidTolls">
+      <input type="checkbox" id="avoidTolls" name="evitar_peajes">
       Evitar vías de peaje si es posible
     </label>
-    <div class="route-status" id="routeStatus" hidden></div>
-  </section>
+    <p class="route-status" id="routeStatus" role="status" aria-live="polite"></p>
+  </form>
 
   <div id="resultsWrap" hidden>
     <div class="route-options" id="routeOptions" hidden></div>
     <div class="kpi-row" id="routeKpis"></div>
 
     <div class="chart-grid route-grid">
-      <section class="card" style="padding:0;overflow:hidden">
+      <section class="card map-card" aria-label="Mapa de la ruta">
         <div id="routeMap"></div>
       </section>
       <section class="card">
         <h2>Peajes en el camino</h2>
-        <div class="card-sub" id="tollsSub"></div>
-        <div class="rank-list" id="tollsList"></div>
+        <p class="card-sub" id="tollsSub"></p>
+        <div id="tollsList"></div>
       </section>
     </div>
 
-    <p class="route-note">⚠️ El tiempo de viaje usa tráfico en tiempo real, pero sigue siendo una estimación — puede diferir de la realidad, sobre todo en vías de montaña. Lo que esta herramienta te da con más confianza es cuánto vas a pagar de peaje en el camino.</p>
-    <p class="route-note">🛣️ Cuando hay más de una vía real entre dos puntos, aquí solo aparecen las que el motor de ruteo considera competitivas en tiempo — puede no incluir todas las que tú conoces. <a href="about.html#limitaciones" style="color:inherit;text-decoration:underline">Ver por qué</a>.</p>
+    <p class="route-note">El tiempo de viaje usa tráfico en tiempo real, pero sigue siendo una estimación y puede diferir de la realidad, sobre todo en vías de montaña. Lo que esta herramienta te da con más confianza es cuánto vas a pagar de peaje en el camino.</p>
+    <p class="route-note">Cuando hay más de una vía real entre dos puntos, aquí solo aparecen las que el motor de ruteo considera competitivas en tiempo, así que puede faltar alguna que tú conoces. <a href="about.html#limitaciones">Ver por qué</a>.</p>
   </div>
 
-  <p style="text-align:center;color:var(--ink-faint);font-size:12.5px;padding-top:8px">
-    Ruteo: <a href="https://www.mapbox.com/directions" target="_blank" rel="noopener" style="color:inherit">Mapbox Directions</a> con tráfico en tiempo real ·
-    Peajes: <a href="https://www.datos.gov.co/Transporte/Peajes/68qj-5xux" target="_blank" rel="noopener" style="color:inherit">INVIAS vía datos.gov.co</a> ·
+  <p class="page-foot">
+    Ruteo: <a href="https://www.mapbox.com/directions" target="_blank" rel="noopener" translate="no">Mapbox Directions</a> con tráfico en tiempo real ·
+    Peajes: <a href="https://www.datos.gov.co/Transporte/Peajes/68qj-5xux" target="_blank" rel="noopener">INVIAS vía datos.gov.co</a> ·
     Distancias y tiempos son estimados
   </p>
 
