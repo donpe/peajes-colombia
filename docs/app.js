@@ -86,16 +86,13 @@ function toggleList(show) {
 }
 
 function renderDeptoSelect() {
-  const counts = {};
-  peajes.forEach(p => {
-    if (p.departamento) counts[p.departamento] = (counts[p.departamento] || 0) + 1;
-  });
-  const names = Object.keys(counts).sort((a, b) => a.localeCompare(b, 'es'));
-
   const sel = document.getElementById('deptoSelect');
+  const names = [...new Set(peajes.map(p => p.departamento).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'es'));
   sel.innerHTML = `<option value="all">Todos los departamentos</option>` +
-    names.map(n => `<option value="${n}">${titleCase(n)} (${counts[n]})</option>`).join('');
+    names.map(n => `<option value="${n}">${titleCase(n)}</option>`).join('');
   sel.value = activeDepto;
+  updateFilterCounts();
 
   sel.addEventListener('change', () => {
     activeDepto = sel.value;
@@ -141,6 +138,25 @@ function renderStats() {
   `;
 }
 
+/* Los dos filtros se combinan (departamento Y tipo de operador), así que el
+   conteo de cada opción se calcula con el otro filtro ya aplicado: así
+   "Atlántico (0)" con INVIAS activo avisa antes de elegir que no hay nada. */
+function updateFilterCounts() {
+  const sel = document.getElementById('deptoSelect');
+  const porTipo = peajes.filter(p => activeType === 'all' || p.operador_tipo === activeType);
+  [...sel.options].forEach(o => {
+    if (o.value === 'all') return;
+    const n = porTipo.filter(p => p.departamento === o.value).length;
+    o.textContent = `${titleCase(o.value)} (${n})`;
+  });
+  const porDepto = peajes.filter(p => activeDepto === 'all' || p.departamento === activeDepto);
+  document.querySelectorAll('#chips .chip').forEach(b => {
+    const k = b.dataset.key;
+    const n = k === 'all' ? porDepto.length : porDepto.filter(p => p.operador_tipo === k).length;
+    b.querySelector('.chip-n').textContent = n;
+  });
+}
+
 function renderChips() {
   const defs = [
     { key: 'all', label: 'Todos', color: null },
@@ -154,15 +170,19 @@ function renderChips() {
     b.className = 'chip';
     b.type = 'button';
     b.setAttribute('aria-pressed', c.key === activeType ? 'true' : 'false');
-    b.innerHTML = (c.color ? `<span class="dot" style="background:${c.color}" aria-hidden="true"></span>` : '') + c.label;
-    b.addEventListener('click', () => {
-      activeType = c.key;
-      [...el.children].forEach(ch => ch.setAttribute('aria-pressed', 'false'));
-      b.setAttribute('aria-pressed', 'true');
-      applyFilters();
-    });
+    b.dataset.key = c.key;
+    b.innerHTML = (c.color ? `<span class="dot" style="background:${c.color}" aria-hidden="true"></span>` : '') +
+      `${c.label} <span class="chip-n"></span>`;
+    b.addEventListener('click', () => setActiveType(c.key));
     el.appendChild(b);
   });
+}
+
+function setActiveType(key) {
+  activeType = key;
+  document.querySelectorAll('#chips .chip').forEach(ch =>
+    ch.setAttribute('aria-pressed', String(ch.dataset.key === key)));
+  applyFilters();
 }
 
 function buildMap() {
@@ -233,6 +253,15 @@ function renderList() {
   const el = document.getElementById('list');
   el.innerHTML = '';
   const subset = filteredPeajes();
+  if (!subset.length) {
+    const tipo = { 'INVIAS': 'de INVIAS', 'Concesión': 'en concesión', 'Por definir': 'con operador por definir' }[activeType] || '';
+    const donde = activeDepto !== 'all' ? ` en ${titleCase(activeDepto)}` : '';
+    el.innerHTML = `<div class="list-empty">
+      <p>No hay peajes ${tipo}${donde}.</p>
+      <button type="button" class="source-link" id="clearType">Ver todos los tipos de operador</button>
+    </div>`;
+    document.getElementById('clearType').addEventListener('click', () => setActiveType('all'));
+  }
   subset.forEach(p => {
     const item = document.createElement('button');
     item.type = 'button';
@@ -258,6 +287,7 @@ function renderList() {
 
 function applyFilters() {
   renderStats();
+  updateFilterCounts();
   renderList();
   cluster.clearLayers();
   filteredPeajes().forEach(p => cluster.addLayer(markerById[p.id]));

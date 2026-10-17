@@ -405,3 +405,7 @@ ul.steps > li::before{
 /* destinos de salto (main, filtros) reciben foco por script: sin anillo */
 [tabindex="-1"]:focus{outline:none}
 .leaflet-bar a{font-family:'Outfit',system-ui,sans-serif}
+.chip-n{font-weight:400;opacity:.75;font-variant-numeric:tabular-nums}
+.list-empty{padding:16px 10px;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.list-empty p{margin:0;font-size:15px;line-height:1.5}
+.list-empty .source-link{border:0;cursor:pointer;font-family:inherit}
