@@ -3,129 +3,101 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard — Peajes de Colombia</title>
-<meta name="description" content="Análisis del inventario nacional de peajes de Colombia: distribución de tarifas, INVIAS vs. concesión, ranking de operadores y distancias entre peajes.">
+<title>Las tarifas en datos — Peajes de Colombia</title>
+<meta name="description" content="Qué cuesta pasar por un peaje en Colombia: distribución de tarifas, cuánto más paga un camión, INVIAS frente a concesión, departamentos con más peajes y peajes muy seguidos. 181 peajes, datos abiertos de INVIAS.">
 <link rel="canonical" href="https://donpe.github.io/peajes-colombia/dashboard.html">
 <meta name="robots" content="index, follow">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Peajes de Colombia">
-<meta property="og:title" content="Dashboard — Peajes de Colombia">
-<meta property="og:description" content="Análisis del inventario nacional de peajes de Colombia: tarifas, operadores y distancias entre peajes.">
+<meta property="og:title" content="Las tarifas en datos — Peajes de Colombia">
+<meta property="og:description" content="Qué cuesta pasar por un peaje en Colombia, quién lo cobra y dónde hay más.">
 <meta property="og:url" content="https://donpe.github.io/peajes-colombia/dashboard.html">
 <meta property="og:locale" content="es_CO">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Dashboard — Peajes de Colombia">
-<meta name="twitter:description" content="Análisis del inventario nacional de peajes de Colombia: tarifas, operadores y distancias entre peajes.">
+<meta name="twitter:title" content="Las tarifas en datos — Peajes de Colombia">
+<meta name="twitter:description" content="Qué cuesta pasar por un peaje en Colombia, quién lo cobra y dónde hay más.">
 
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#171c38" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f7f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1712" media="(prefers-color-scheme: dark)">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600&family=Overpass:wght@700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
-<body class="content-page">
+<body>
 
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
-<header id="header">
-  <a class="brand" href="index.html">Peajes de Colombia</a>
-  <nav class="site-nav" aria-label="Secciones del sitio">
-    <a href="index.html">Mapa</a>
-    <a href="ruta.html">Ruta</a>
-    <a href="dashboard.html" aria-current="page">Dashboard</a>
+<header class="bar">
+  <a class="marca" href="index.html">Peajes de Colombia</a>
+  <nav class="tabs" aria-label="Secciones del sitio">
+    <a href="index.html">Viaje</a>
+    <a href="mapa.html">Mapa</a>
+    <a href="dashboard.html" aria-current="page">Datos</a>
     <a href="about.html">Acerca</a>
   </nav>
+  <fieldset class="vehiculo">
+    <legend>Tu vehículo</legend>
+    <div class="opts">
+      <label title="Automóvil, campero, camioneta"><input type="radio" name="cat" value="I"><span>I</span></label>
+      <label title="Bus o camión de 2 ejes"><input type="radio" name="cat" value="II"><span>II</span></label>
+      <label title="Camión de 3 ejes"><input type="radio" name="cat" value="III"><span>III</span></label>
+      <label title="Camión de 4 ejes"><input type="radio" name="cat" value="IV"><span>IV</span></label>
+      <label title="Camión de 5 o más ejes"><input type="radio" name="cat" value="V"><span>V</span></label>
+    </div>
+  </fieldset>
 </header>
 
-<main class="page" id="contenido" tabindex="-1">
-
-  <div class="page-head">
-    <h1>Análisis de tarifas y operadores</h1>
-    <p>Los 181 peajes de la Red Vial Nacional, leídos en conjunto: cómo se distribuyen las tarifas, quién los opera y cómo varían entre departamentos.</p>
+<main class="pagina" id="contenido" tabindex="-1">
+  <div class="cabeza">
+    <div>
+      <h1>Las tarifas en datos</h1>
+      <p>Qué cuesta pasar por un peaje en Colombia, quién lo cobra y dónde hay más. Todo se recalcula para el vehículo que elijas arriba.</p>
+    </div>
+    <p class="version">Datos de INVIAS, versión del 19 sep 2026<br>181 peajes</p>
   </div>
+  <ul class="claves" id="claves" aria-live="polite"></ul>
 
-  <div class="kpi-row" id="kpiRow"></div>
-
-  <div class="chart-grid">
-    <section class="card">
-      <h2>Distribución de tarifas para automóvil</h2>
-      <p class="card-sub">Cuántos peajes caen en cada rango de precio (categoría I, vehículo particular)</p>
-      <canvas id="histChart" height="220" role="img" aria-label="Histograma de tarifas de categoría I"></canvas>
-    </section>
-    <section class="card">
-      <h2>INVIAS frente a concesión</h2>
-      <p class="card-sub">Quién administra los peajes y a qué tarifa promedio</p>
-      <canvas id="opChart" height="220" role="img" aria-label="Peajes por tipo de operador"></canvas>
-    </section>
-  </div>
-
-  <div class="chart-grid">
-    <section class="card">
-      <h2>Los 10 peajes más caros</h2>
-      <p class="card-sub">Tarifa de categoría I (vehículo particular)</p>
-      <ol class="rank-list" id="topExpensive"></ol>
-    </section>
-    <section class="card">
-      <h2>Los 10 peajes más económicos</h2>
-      <p class="card-sub">Tarifa de categoría I (vehículo particular)</p>
-      <ol class="rank-list" id="topCheap"></ol>
-    </section>
-  </div>
-
-  <section class="card">
-    <h2>Peajes por departamento</h2>
-    <p class="card-sub">Los 33 departamentos, ordenados por cantidad de peajes</p>
-    <div id="deptoBars"></div>
+  <section class="bloque" aria-labelledby="h-dist">
+    <div><h2 id="h-dist">¿Cuánto cuesta un peaje?</h2><p class="expl" id="explDist"></p></div>
+    <div class="dist" id="dist"></div>
   </section>
 
-  <section class="card">
-    <h2>Operadores con más peajes</h2>
-    <p class="card-sub">Los 12 primeros, incluido INVIAS y las principales concesiones</p>
-    <div id="operatorBars"></div>
+  <section class="bloque" aria-labelledby="h-cats">
+    <div><h2 id="h-cats">¿Cuánto más paga un camión?</h2><p class="expl">Tarifa promedio nacional por categoría de vehículo, y cuántas veces lo que paga un automóvil.</p></div>
+    <ul class="barras" id="cats"></ul>
   </section>
 
-  <section class="card">
-    <h2>Cómo escala la tarifa por tipo de vehículo</h2>
-    <p class="card-sub">Promedio nacional por categoría, de automóvil a camión de 5 o más ejes</p>
-    <div id="categoryBars"></div>
+  <section class="bloque" aria-labelledby="h-op">
+    <div><h2 id="h-op">¿INVIAS o concesión?</h2><p class="expl">Quién cobra el peaje y cuánto cobra en promedio para tu vehículo. INVIAS recibió 13 peajes en 2026, cuando terminaron tres concesiones.</p></div>
+    <div><div class="duo" id="duo"></div><p class="expl" id="duoNota"></p></div>
   </section>
 
-  <div class="section-head">
-    <h2>Distancias entre peajes</h2>
-    <p>Qué tan cerca o lejos está cada peaje de su vecino más próximo, en línea recta (distancia geodésica) entre las coordenadas de los 181 peajes. Sirve para detectar tramos con peajes muy seguidos o casos aislados.</p>
-  </div>
+  <section class="bloque" aria-labelledby="h-dep">
+    <div><h2 id="h-dep">¿Dónde hay más peajes?</h2><p class="expl">Los 10 departamentos con más peajes, con la tarifa promedio para tu vehículo.</p></div>
+    <ul class="barras" id="deptos"></ul>
+  </section>
 
-  <div class="kpi-row" id="distKpiRow"></div>
+  <section class="bloque" aria-labelledby="h-ext">
+    <div><h2 id="h-ext">Los extremos</h2><p class="expl">Los peajes más caros y los más baratos para tu vehículo.</p></div>
+    <div class="dos"><div><h3>Más caros</h3><ol id="caros"></ol></div><div><h3>Más baratos</h3><ol id="baratos"></ol></div></div>
+  </section>
 
-  <div class="chart-grid">
-    <section class="card">
-      <h2>Los 10 pares de peajes más cercanos entre sí</h2>
-      <p class="card-sub">Distancia en línea recta entre cada peaje y su vecino más próximo</p>
-      <ol class="rank-list" id="closestPairs"></ol>
-    </section>
-    <section class="card">
-      <h2>Los 10 peajes más aislados</h2>
-      <p class="card-sub">Mayor distancia hasta su peaje más cercano</p>
-      <ol class="rank-list" id="mostIsolated"></ol>
-    </section>
-  </div>
-
-  <section class="card">
-    <h2>Distribución de distancias al vecino más cercano</h2>
-    <p class="card-sub">Cada peaje aporta un dato: qué tan lejos está de su vecino más próximo</p>
-    <canvas id="distHistChart" height="200" role="img" aria-label="Histograma de distancias al peaje vecino"></canvas>
+  <section class="bloque" aria-labelledby="h-cerca">
+    <div><h2 id="h-cerca">Peajes muy seguidos</h2><p class="expl">Pares de peajes a pocos kilómetros entre sí, en línea recta. A veces son las dos casetas de un mismo cruce.</p></div>
+    <div class="dos" style="grid-template-columns:1fr"><ol id="cerca"></ol></div>
   </section>
 
   <p class="page-foot">
-    Datos: <a href="https://www.datos.gov.co/Transporte/Peajes/68qj-5xux" target="_blank" rel="noopener">INVIAS vía datos.gov.co</a>,
-    versión del 19 sep 2026 · Ver la <a href="about.html">metodología completa</a>
+    Datos: <a href="https://www.datos.gov.co/Transporte/Peajes/68qj-5xux" target="_blank" rel="noopener">INVIAS vía datos.gov.co</a>, versión del 19 sep 2026, con las correcciones documentadas en <a href="about.html">Acerca</a> ·
+    <a href="data/peajes_clean.json">Descargar todos los datos (JSON)</a>
   </p>
-
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<div class="tip" id="tip" role="tooltip" hidden></div>
+<script src="comun.js"></script>
 <script src="dashboard.js"></script>
 </body>
 </html>

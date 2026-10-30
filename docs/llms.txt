@@ -6,9 +6,9 @@ Cubre 181 peajes: ubicación (lat/lon), tarifas vigentes por categoría de vehí
 
 ## Páginas
 
-- [Mapa](https://donpe.github.io/peajes-colombia/index.html): todos los peajes sobre un mapa real (OpenStreetMap), agrupados por cercanía, filtrables por departamento y tipo de operador, con ficha de detalle por peaje.
-- [Ruta](https://donpe.github.io/peajes-colombia/ruta.html): calculadora de viaje — dado un origen y un destino (municipios de Colombia), traza la ruta real por carretera y suma los peajes que encuentra en el camino, con su costo por categoría de vehículo.
-- [Dashboard](https://donpe.github.io/peajes-colombia/dashboard.html): análisis agregado del inventario — distribución de tarifas, INVIAS vs. concesión, ranking de operadores y distancias entre peajes.
+- [Viaje](https://donpe.github.io/peajes-colombia/): la portada y calculadora de viaje — dado un origen y un destino (municipios de Colombia), traza la ruta real por carretera y suma los peajes que encuentra en el camino, con la tarifa de la categoría de vehículo elegida. Una ruta se comparte con ?o=Municipio, Departamento&d=…&cat=I.
+- [Mapa](https://donpe.github.io/peajes-colombia/mapa.html): todos los peajes sobre un mapa real (OpenStreetMap), filtrables por departamento y tipo de operador, con ficha de cada peaje. Un peaje se comparte con ?peaje=<id>.
+- [Datos](https://donpe.github.io/peajes-colombia/dashboard.html): el inventario leído en conjunto — distribución de tarifas, cuánto más paga un camión, INVIAS frente a concesión, departamentos con más peajes, extremos y peajes muy seguidos.
 - [Acerca](https://donpe.github.io/peajes-colombia/about.html): de dónde sale cada dato, qué se le hizo, herramientas usadas y limitaciones conocidas (incluye las fuentes primarias citadas para cada corrección manual).
 
 ## Datos

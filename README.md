@@ -8,18 +8,22 @@ de INVIAS ([datos.gov.co](https://www.datos.gov.co/Transporte/Peajes/68qj-5xux))
 
 ## Qué contiene
 
-- **Mapa** ([docs/index.html](docs/index.html)) — los 181 peajes sobre un mapa real
-  (OpenStreetMap), agrupados por cercanía, filtrables por departamento y tipo de
-  operador, con ficha de detalle por peaje.
-- **Ruta** ([docs/ruta.html](docs/ruta.html)) — calculadora de viaje: origen/destino
-  con buscador predictivo de municipios, ruta trazada con Mapbox Directions (con
-  tráfico en tiempo real y opción de evitar peajes), y los peajes que encuentra
-  en el camino con su costo por categoría de vehículo.
-- **Dashboard** ([docs/dashboard.html](docs/dashboard.html)) — análisis del
-  inventario completo: distribución de tarifas, INVIAS vs. concesión, ranking de
-  operadores y distancias entre peajes.
+- **Viaje** ([docs/index.html](docs/index.html)) — la portada: ¿cuánto pagas de
+  peajes? Origen y destino con buscador predictivo de municipios, ruta trazada con
+  Mapbox Directions (tráfico en tiempo real y opción de evitar peajes), y los peajes
+  del camino dibujados como una vía recta con su kilómetro, más el total como tiquete.
+- **Mapa** ([docs/mapa.html](docs/mapa.html)) — los 181 peajes sobre un mapa real
+  (OpenStreetMap), filtrables por departamento y tipo de operador, con la tarifa
+  visible al acercar y la ficha de cada peaje.
+- **Datos** ([docs/dashboard.html](docs/dashboard.html)) — el inventario leído en
+  conjunto: distribución de tarifas, cuánto más paga un camión, INVIAS frente a
+  concesión, departamentos con más peajes, extremos y peajes muy seguidos.
 - **Acerca** ([docs/about.html](docs/about.html)) — fuentes de datos, qué se le
   hizo a los datos, herramientas usadas y limitaciones conocidas.
+
+En todas las páginas, **Tu vehículo** (categoría I a V) cambia los precios del
+sitio entero y se recuerda entre visitas. Los enlaces viejos siguen funcionando:
+`ruta.html?o=…&d=…` lleva a Viaje e `index.html?peaje=…` lleva al Mapa.
 
 ## Estructura del repositorio
 

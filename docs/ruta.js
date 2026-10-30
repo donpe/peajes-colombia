@@ -3,9 +3,7 @@
    Mapbox Directions -> cruce geométrico de la ruta contra el inventario de peajes ->
    resumen y mapa. */
 
-const money = n => n == null ? '—' : new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(n);
-const titleCase = s => s.toLowerCase().replace(/(^|\s|\(|\.)([a-záéíóúñ])/g, (m, sep, c) => sep + c.toUpperCase());
-const OP_COLOR = { 'INVIAS': '#2f7d52', 'Concesión': '#d1495b', 'Por definir': '#8991b3' };
+const { fmt, tc } = Peajes;
 
 // Token público de Mapbox: está pensado para vivir en código de cliente
 // (se restringe por dominio desde el dashboard de Mapbox, no ocultándolo).
@@ -24,25 +22,36 @@ const OSRM_NEAREST_URL = 'https://router.project-osrm.org/nearest/v1/driving';
 let municipios = [];
 let selOrigen = null;   // { n, d, lat, lon }
 let selDestino = null;
-let map, routeLayer, tollLayerGroup;
+let map, routeLayer, tollLayerGroup, fondoLayer;
+let inventario = [];   // los peajes, cargados una vez al abrir la página
 let tollMarkers = [];  // marcadores de peaje de la ruta activa, en el mismo orden que la lista
 let rutasCalculadas = [];  // [{ ruta, matches }, ...] — todas las alternativas de la última búsqueda
 let rutaActivaIdx = 0;
 
 async function init() {
-  const res = await fetch('data/municipios.json');
-  municipios = await res.json();
+  const [resM, resP] = await Promise.all([fetch('data/municipios.json'), fetch('data/peajes_clean.json')]);
+  municipios = await resM.json();
+  inventario = (await resP.json()).filter(p => p.lat != null && p.lon != null);
+  iniciarMapa();
+  pintarLeyenda();
 
   setupAutocomplete('inputOrigen', 'listOrigen', m => { selOrigen = m; });
   setupAutocomplete('inputDestino', 'listDestino', m => { selDestino = m; });
 
   document.getElementById('swapBtn').addEventListener('click', swapOrigenDestino);
   document.getElementById('routeForm').addEventListener('submit', e => { e.preventDefault(); calcularRuta(); });
-  document.getElementById('catSelect').addEventListener('change', () => {
-    // cambiar de categoría no requiere volver a pedir la ruta: ya tenemos
+  document.addEventListener('peajes:cat', () => {
+    // cambiar de vehículo no requiere volver a pedir la ruta: ya tenemos
     // los peajes de cada alternativa, solo cambia qué tarifa se suma.
-    if (rutasCalculadas.length) { renderRouteOptions(); mostrarResultados(); guardarEstadoEnUrl(); }
+    if (rutasCalculadas.length) { renderRouteOptions(); mostrarResultados({ encuadrar: false }); guardarEstadoEnUrl(); }
   });
+  // ejemplos de un clic: llenan origen y destino y calculan
+  document.querySelectorAll('#ejemplos button').forEach(b => b.addEventListener('click', () => {
+    selOrigen = buscarPorEtiqueta(b.dataset.o); selDestino = buscarPorEtiqueta(b.dataset.d);
+    document.getElementById('inputOrigen').value = selOrigen ? etiqueta(selOrigen) : '';
+    document.getElementById('inputDestino').value = selDestino ? etiqueta(selDestino) : '';
+    calcularRuta();
+  }));
   document.getElementById('avoidTolls').addEventListener('change', () => {
     // esto sí cambia la ruta en sí (no solo el total), así que hay que
     // volver a pedirla — solo si ya había una búsqueda hecha.
@@ -52,7 +61,6 @@ async function init() {
   // una ruta compartida (?o=…&d=…&cat=…&evitar=1) se calcula al abrir la página
   const q = new URLSearchParams(location.search);
   const o = buscarPorEtiqueta(q.get('o')), d = buscarPorEtiqueta(q.get('d'));
-  if (['I', 'II', 'III', 'IV', 'V'].includes(q.get('cat'))) document.getElementById('catSelect').value = q.get('cat');
   if (q.get('evitar') === '1') document.getElementById('avoidTolls').checked = true;
   if (o) { selOrigen = o; document.getElementById('inputOrigen').value = etiqueta(o); }
   if (d) { selDestino = d; document.getElementById('inputDestino').value = etiqueta(d); }
@@ -73,7 +81,7 @@ function guardarEstadoEnUrl() {
   const q = new URLSearchParams();
   if (selOrigen) q.set('o', etiqueta(selOrigen));
   if (selDestino) q.set('d', etiqueta(selDestino));
-  q.set('cat', document.getElementById('catSelect').value);
+  q.set('cat', Peajes.cat);
   if (document.getElementById('avoidTolls').checked) q.set('evitar', '1');
   history.replaceState(null, '', `?${q}`);
 }
@@ -472,14 +480,11 @@ async function calcularRuta() {
 
   try {
     const evitarPeajes = document.getElementById('avoidTolls').checked;
-    const [peajesRes, rutas] = await Promise.all([
-      fetch('data/peajes_clean.json').then(r => r.json()),
-      obtenerRutas(selOrigen, selDestino, evitarPeajes),
-    ]);
+    const rutas = await obtenerRutas(selOrigen, selDestino, evitarPeajes);
 
     status.textContent = 'Verificando peajes en el camino…';
     const todasLasRutas = await Promise.all(rutas.map(async ruta => {
-      const candidatos = peajesEnRuta(ruta.latlon, peajesRes);
+      const candidatos = peajesEnRuta(ruta.latlon, inventario);
       const matches = await verificarPorNombreDeVia(candidatos);
       return { ruta, matches };
     }));
@@ -489,7 +494,7 @@ async function calcularRuta() {
     mostrarResultados();
     guardarEstadoEnUrl();
     const n = rutasCalculadas.length;
-    status.textContent = n > 1 ? `Listo: ${n} rutas posibles.` : 'Listo.';
+    status.textContent = n > 1 ? `Hay ${n} rutas posibles; elige una para ver sus peajes.` : '';
   } catch (err) {
     status.textContent = err.message || 'No se pudo calcular la ruta. Intenta de nuevo.';
     status.className = 'route-status error';
@@ -512,15 +517,17 @@ function seleccionarRuta(idx) {
    mismas cifras (tiempo, distancia, peajes, costo) y una insignia objetiva
    por cada métrica en la que una ruta es la mejor — quien la usa decide
    el trade-off, no la app por su cuenta. */
+function statsDe(matches, cat) {
+  const conTarifa = matches.filter(m => m.peaje.categorias && m.peaje.categorias[cat] != null);
+  return { conTarifa, total: conTarifa.reduce((sum, m) => sum + m.peaje.categorias[cat], 0) };
+}
+
 function renderRouteOptions() {
   const el = document.getElementById('routeOptions');
   if (rutasCalculadas.length < 2) { el.hidden = true; el.innerHTML = ''; return; }
 
-  const cat = document.getElementById('catSelect').value;
-  const stats = rutasCalculadas.map(({ ruta, matches }) => {
-    const conTarifa = matches.filter(m => m.peaje.categorias && m.peaje.categorias[cat] != null);
-    return { conTarifa, total: conTarifa.reduce((sum, m) => sum + m.peaje.categorias[cat], 0) };
-  });
+  const cat = Peajes.cat;
+  const stats = rutasCalculadas.map(({ matches }) => statsDe(matches, cat));
   const minDuracion = Math.min(...rutasCalculadas.map(r => r.ruta.durationH));
   const minTotal = Math.min(...stats.map(s => s.total));
   const minPeajes = Math.min(...stats.map(s => s.conTarifa.length));
@@ -534,63 +541,68 @@ function renderRouteOptions() {
     if (conTarifa.length === minPeajes) badges.push('Menos peajes');
     return `
       <button type="button" class="route-option" aria-pressed="${i === rutaActivaIdx}" data-i="${i}">
-        <span class="route-option-label">Ruta ${i + 1}</span>
-        <span class="route-option-badges">${badges.map(b => `<span class="route-badge">${b}</span>`).join('')}</span>
-        <span class="route-option-stats">${ruta.distanceKm.toFixed(0)} km · ~${formatDuracion(ruta.durationH)} · ${conTarifa.length} peaje${conTarifa.length === 1 ? '' : 's'} · $${money(total)}</span>
+        <b>Ruta ${i + 1} · ${fmt(total)}</b>
+        <small>${ruta.distanceKm.toFixed(0)} km · ~${formatDuracion(ruta.durationH)} · ${conTarifa.length} peaje${conTarifa.length === 1 ? '' : 's'}</small>
+        <span class="route-badges">${badges.map(b => `<span class="route-badge">${b}</span>`).join('')}</span>
       </button>`;
   }).join('');
   [...el.children].forEach(btn => btn.addEventListener('click', () => seleccionarRuta(+btn.dataset.i)));
 }
 
-function catLabel(cat) {
-  return { I: 'Automóvil', II: 'Bus / 2 ejes', III: 'Camión 3 ejes', IV: 'Camión 4 ejes', V: 'Camión 5+ ejes' }[cat] || cat;
+function mostrarResultados({ encuadrar = true } = {}) {
+  const { ruta, matches } = rutasCalculadas[rutaActivaIdx];
+  const cat = Peajes.cat;
+  const { conTarifa, total } = statsDe(matches, cat);
+  document.getElementById('resultsWrap').hidden = false;
+
+  document.getElementById('rTitulo').textContent = `${selOrigen.n} → ${selDestino.n}`;
+  document.getElementById('rTotal').textContent = fmt(total);
+  document.getElementById('rSub').textContent =
+    `${ruta.distanceKm.toFixed(0)} km · ~${formatDuracion(ruta.durationH)} con tráfico · ${conTarifa.length} peaje${conTarifa.length === 1 ? '' : 's'} · categoría ${cat}`;
+
+  pintarTira(ruta, matches, cat);
+  pintarTiquete(matches, cat, total);
+  renderMapa(ruta, matches, encuadrar);
 }
 
-function mostrarResultados() {
-  const { ruta, matches } = rutasCalculadas[rutaActivaIdx];
-  document.getElementById('resultsWrap').hidden = false;
-  const cat = document.getElementById('catSelect').value;
+/* La tira: la ruta dibujada como una vía recta de origen a destino, con cada
+   peaje en su kilómetro. Si dos peajes quedan muy juntos en la tira, la
+   etiqueta del segundo baja para no montarse sobre la del primero. */
+function pintarTira(ruta, matches, cat) {
+  const total = ruta.distanceKm || 1;
+  const pos = km => Math.min(94, Math.max(6, km / total * 100));
+  let ultimo = -100;
+  const puntos = matches.map((m, i) => {
+    const x = pos(m.along);
+    const alt = x - ultimo < 12;
+    if (!alt) ultimo = x;
+    const tarifa = m.peaje.categorias ? m.peaje.categorias[cat] : null;
+    return `<button type="button" class="p${alt ? ' alt' : ''}" data-i="${i}" style="left:${x}%"
+        aria-label="${tc(m.peaje.nombre_display)}, km ${m.along.toFixed(0)}, ${tarifa != null ? fmt(tarifa) : 'no aplica a esta categoría'}">
+      <span class="km">km ${m.along.toFixed(0)}</span>${Peajes.talanquera(Peajes.tipoClase(m.peaje), true, 1.1).svg}
+      <span class="nom">${tarifa != null ? fmt(tarifa) : '—'}</span></button>`;
+  }).join('');
+  const el = document.getElementById('tira');
+  el.setAttribute('aria-label', `La ruta como una vía recta de ${selOrigen.n} a ${selDestino.n}, con sus peajes`);
+  el.innerHTML = `<span class="ciudad">${selOrigen.n}</span><div class="tramo"><div class="via"></div>${puntos}</div><span class="ciudad">${selDestino.n}</span>`;
+  el.querySelectorAll('button.p').forEach(b => b.addEventListener('click', () => irAPeajeEnMapa(+b.dataset.i)));
+}
 
-  const conTarifa = matches.filter(m => m.peaje.categorias && m.peaje.categorias[cat] != null);
-  const total = conTarifa.reduce((sum, m) => sum + m.peaje.categorias[cat], 0);
-
-  const kpis = [
-    { v: ruta.distanceKm.toFixed(0) + ' km', l: 'Distancia' },
-    { v: '~' + formatDuracion(ruta.durationH), l: 'Tiempo estimado con tráfico' },
-    { v: conTarifa.length, l: 'Peajes en la ruta' },
-    { v: '$' + money(total), l: `Total en peajes, categoría ${cat}` },
-  ];
-  document.getElementById('routeKpis').innerHTML = kpis.map(k =>
-    `<div class="kpi"><b>${k.v}</b><span>${k.l}</span></div>`
-  ).join('');
-
-  document.getElementById('tollsSub').textContent =
-    `${selOrigen.n} → ${selDestino.n} · Categoría ${cat} (${catLabel(cat)})`;
-
-  const tollsList = document.getElementById('tollsList');
-  if (!matches.length) {
-    tollsList.innerHTML = `<p class="ac-empty">No se detectaron peajes en esta ruta.</p>`;
-  } else {
-    tollsList.innerHTML = '<ol class="rank-list">' + matches.map((m, i) => {
-      const tarifa = m.peaje.categorias ? m.peaje.categorias[cat] : null;
-      return `
-      <li><button type="button" class="rank-row rank-btn${tarifa == null ? ' rank-row-muted' : ''}" data-i="${i}">
-        <span class="rank-pos" aria-hidden="true">${i + 1}</span>
-        <span class="rank-name">${m.peaje.nombre_display}
-          <span class="rank-sub">km ${m.along.toFixed(0)} · ${m.peaje.operador || 'Operador no definido'}${m.peaje.departamento ? ' · ' + titleCase(m.peaje.departamento) : ''}</span>
-        </span>
-        <span class="rank-val">${tarifa != null ? '$' + money(tarifa) : 'No aplica a esta categoría'}</span>
-      </button></li>`;
-    }).join('') + '</ol>';
-  }
-
-  renderMapa(ruta, matches);
-
-  // clic en un peaje de la lista -> lo centra en el mapa y abre su ficha
-  // (los marcadores ya existen porque renderMapa() acaba de crearlos)
-  tollsList.querySelectorAll('.rank-btn').forEach(el => {
-    el.addEventListener('click', () => irAPeajeEnMapa(+el.dataset.i));
-  });
+function pintarTiquete(matches, cat, total) {
+  const filas = matches.length ? matches.map((m, i) => {
+    const tarifa = m.peaje.categorias ? m.peaje.categorias[cat] : null;
+    const sentido = m.peaje.cobra_en_sentido ? ` · cobra solo ${m.peaje.cobra_en_sentido.descripcion}` : '';
+    return `<button type="button" class="fila${tarifa == null ? ' sin' : ''}" data-i="${i}">
+      <span>${tc(m.peaje.nombre_display)}<small>km ${m.along.toFixed(0)}${m.peaje.departamento ? ' · ' + tc(m.peaje.departamento) : ''}${sentido}</small></span>
+      <span class="v">${tarifa != null ? fmt(tarifa) : 'no aplica'}</span></button>`;
+  }).join('') : '<p class="pie">No se detectaron peajes en esta ruta.</p>';
+  const el = document.getElementById('tiquete');
+  el.innerHTML = `
+    <header><h2>${selOrigen.n} → ${selDestino.n}</h2>Categoría ${cat} · ${Peajes.CAT[cat]}</header>
+    ${filas}
+    <div class="total"><span>Total</span><span>${fmt(total)}</span></div>
+    <p class="pie">Tarifas vigentes 2026 · incluyen el aporte al Fosevi</p>`;
+  el.querySelectorAll('button.fila').forEach(b => b.addEventListener('click', () => irAPeajeEnMapa(+b.dataset.i)));
 }
 
 function formatDuracion(h) {
@@ -600,96 +612,95 @@ function formatDuracion(h) {
   return `${horas} h ${min} min`;
 }
 
-function renderMapa(ruta, matches) {
-  if (!map) {
-    map = L.map('routeMap', { zoomControl: true });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-      maxZoom: 18,
-    }).addTo(map);
-    routeLayer = L.layerGroup().addTo(map);
-    tollLayerGroup = L.layerGroup().addTo(map);
-  }
+/* ---------------- mapa ---------------- */
+
+function iniciarMapa() {
+  map = L.map('routeMap', { zoomControl: true }).setView([4.6, -74.1], 6);
+  Peajes.capaBase(map);
+  fondoLayer = L.layerGroup().addTo(map);
+  routeLayer = L.layerGroup().addTo(map);
+  tollLayerGroup = L.layerGroup().addTo(map);
+  pintarFondo();
+  // el mapa se mide al iniciar; si el layout termina de asentarse después
+  // (fuentes, barra pegajosa), se recalcula para no dejar franjas sin tiles
+  const fixSize = () => map.invalidateSize();
+  requestAnimationFrame(() => requestAnimationFrame(fixSize));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fixSize);
+  window.addEventListener('resize', fixSize);
+}
+
+// Todos los peajes, tenues, como contexto: los de la ruta se pintan encima
+function pintarFondo(excluir = new Set()) {
+  fondoLayer.clearLayers();
+  inventario.forEach(p => {
+    if (excluir.has(p.id)) return;
+    fondoLayer.addLayer(L.marker([p.lat, p.lon], { icon: Peajes.icono(p, { escala: .6 }), opacity: excluir.size ? .35 : .75, title: tc(p.nombre_display) })
+      .bindPopup(() => popupHtml(p), { maxWidth: 260 }));
+  });
+}
+
+function pintarLeyenda() {
+  document.getElementById('leyenda').innerHTML = [['invias', 'INVIAS'], ['conc', 'Concesión'], ['def', 'Por definir']]
+    .map(([t, n]) => `<span>${Peajes.talanquera(t, false, .8).svg}${n}</span>`).join('');
+}
+
+function renderMapa(ruta, matches, encuadrar = true) {
   routeLayer.clearLayers();
   tollLayerGroup.clearLayers();
+  pintarFondo(new Set(matches.map(m => m.peaje.id)));
 
-  const line = L.polyline(ruta.latlon, { color: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), weight: 4, opacity: 0.85 });
+  // la vía: trazo oscuro con la línea amarilla discontinua encima
+  const asfalto = getComputedStyle(document.documentElement).getPropertyValue('--asfalto').trim() || '#0d2a1c';
+  const line = L.polyline(ruta.latlon, { color: asfalto, weight: 7, opacity: .95 });
   routeLayer.addLayer(line);
+  routeLayer.addLayer(L.polyline(ruta.latlon, { color: '#f6e016', weight: 2, dashArray: '8 8' }));
+  routeLayer.addLayer(L.marker(ruta.latlon[0], { icon: extremoIcon(selOrigen.n), keyboard: false }));
+  routeLayer.addLayer(L.marker(ruta.latlon[ruta.latlon.length - 1], { icon: extremoIcon(selDestino.n), keyboard: false }));
 
-  const startIcon = endpointIcon('#2f7d52', 'A');
-  const endIcon = endpointIcon('#d1495b', 'B');
-  routeLayer.addLayer(L.marker(ruta.latlon[0], { icon: startIcon }));
-  routeLayer.addLayer(L.marker(ruta.latlon[ruta.latlon.length - 1], { icon: endIcon }));
-
-  const cat = document.getElementById('catSelect').value;
-  tollMarkers = matches.map((m, i) => {
-    const color = OP_COLOR[m.peaje.operador_tipo] || OP_COLOR['Por definir'];
-    const marker = L.marker([m.peaje.lat, m.peaje.lon], { icon: tollIcon(i + 1, color) });
-    marker.bindPopup(popupHtml(m.peaje, m.along, cat), { maxWidth: 260 });
+  tollMarkers = matches.map(m => {
+    const marker = L.marker([m.peaje.lat, m.peaje.lon], { icon: Peajes.icono(m.peaje, { on: true, precio: true }), zIndexOffset: 1000, title: tc(m.peaje.nombre_display) });
+    marker.bindPopup(() => popupHtml(m.peaje, m.along), { maxWidth: 260 });
     tollLayerGroup.addLayer(marker);
     return marker;
   });
 
-  setTimeout(() => {
+  if (encuadrar) setTimeout(() => {
     map.invalidateSize();
-    map.fitBounds(line.getBounds(), { padding: [24, 24] });
+    map.fitBounds(line.getBounds(), { padding: [40, 40] });
   }, 50);
 }
 
-// Lleva el mapa al peaje elegido en la lista y abre su ficha — mismo gesto
-// que seleccionar un peaje en la lista del Mapa.
+// Lleva el mapa al peaje elegido (en la tira o en el tiquete) y abre su ficha
 function irAPeajeEnMapa(i) {
   const marker = tollMarkers[i];
   if (!map || !marker) return;
   const zoom = Math.max(map.getZoom(), 13);
-  // Centrar justo en el marcador deja el popup (que se abre hacia arriba)
-  // pegado al borde superior del mapa o empujando el marcador hacia abajo.
-  // Se corre el centro 90px hacia arriba en pantalla para que el conjunto
-  // marcador+popup quede balanceado en el mapa.
+  // se corre el centro 90px hacia arriba para que el popup no quede pegado al borde
   const punto = map.project(marker.getLatLng(), zoom).subtract([0, 90]);
   map.setView(map.unproject(punto, zoom), zoom, { animate: true });
   marker.openPopup();
+  if (window.matchMedia('(max-width: 860px)').matches) document.getElementById('routeMap').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-// Misma estructura que el popup del Mapa (app.js): nombre, operador, tarifa —
-// con el km de la ruta como línea extra, propia de este contexto.
-function popupHtml(p, along, cat) {
+function popupHtml(p, along) {
+  const cat = Peajes.cat;
   const tarifa = p.categorias ? p.categorias[cat] : null;
   return `<div class="popup">
-    <div class="popup-name">${p.nombre_display}</div>
-    <div class="popup-op">${p.operador || 'Operador no definido'}</div>
-    <div class="popup-price">Categoría ${cat}: ${tarifa != null ? '$' + money(tarifa) : '—'}</div>
-    <div class="popup-km">km ${along.toFixed(0)} de la ruta</div>
+    <b>${tc(p.nombre_display)}</b>
+    <small>${p.operador || 'Operador por definir'}${p.departamento ? ' · ' + tc(p.departamento) : ''}</small>
+    <div>Categoría ${cat}: <strong>${tarifa != null ? fmt(tarifa) : 'no aplica'}</strong></div>
+    ${along != null ? `<small>km ${along.toFixed(0)} de la ruta</small>` : ''}
+    ${p.cobra_en_sentido ? `<small>Cobra solo ${p.cobra_en_sentido.descripcion}</small>` : ''}
   </div>`;
 }
 
-function endpointIcon(color, letter) {
+// Origen y destino: un punto oscuro con el nombre de la ciudad
+function extremoIcon(nombre) {
   return L.divIcon({
-    className: '',
-    html: `<div style="width:24px;height:24px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-family:Outfit,sans-serif;font-weight:700;font-size:13px">${letter}</div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
-  });
-}
-
-// Mismo pin (forma de gota) que usan los peajes en el Mapa — coloreado por
-// tipo de operador, igual que allá — pero con el número de orden en la ruta
-// en vez de "$", porque aquí ese orden es la información relevante.
-function tollIcon(n, color) {
-  const svg = `
-    <svg width="26" height="34" viewBox="0 0 26 34" xmlns="http://www.w3.org/2000/svg">
-      <path d="M13 0.5C6.1 0.5 0.5 6.1 0.5 13c0 9.2 12.5 20 12.5 20s12.5-10.8 12.5-20C25.5 6.1 19.9 0.5 13 0.5z"
-            fill="${color}" stroke="#fff" stroke-width="1.5"/>
-      <circle cx="13" cy="13" r="7" fill="#fff"/>
-      <text x="13" y="17.5" text-anchor="middle" font-family="Outfit, sans-serif"
-            font-weight="700" font-size="11" fill="${color}">${n}</text>
-    </svg>`;
-  return L.divIcon({
-    className: 'peaje-pin',
-    html: svg,
-    iconSize: [26, 34],
-    iconAnchor: [13, 34],
-    popupAnchor: [0, -30],
+    className: 'mk',
+    html: `<span style="display:block;width:16px;height:16px;border-radius:50%;background:#0d2a1c;border:3px solid #f6e016"></span><span class="mk-precio" style="left:20px;top:-4px">${nombre}</span>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
   });
 }
 

@@ -1,320 +1,154 @@
-/* Dashboard de análisis — Peajes de Colombia */
+/* Datos — Peajes de Colombia
+   Seis preguntas sobre el inventario, todas recalculadas para el vehículo
+   elegido en "Tu vehículo". Gráficos en HTML/SVG, sin librerías: columnas
+   y barras de un solo tono (la tinta), con el amarillo solo para resaltar. */
 
-const money = n => n == null ? '—' : new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(n);
-const OP_COLOR = { 'INVIAS': '#2f7d52', 'Concesión': '#d1495b', 'Por definir': '#8991b3' };
+const { fmt, tc } = Peajes;
+let peajes = [];
 
-const CAT_LABEL = {
-  I: 'I · Automóvil', II: 'II · Bus o 2 ejes', III: 'III · Camión 3 ejes',
-  IV: 'IV · Camión 4 ejes', V: 'V · Camión 5+ ejes',
-};
+const promedio = a => a.reduce((s, x) => s + x, 0) / a.length;
+const mediana = a => { const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const fmtMil = n => '$' + new Intl.NumberFormat('es-CO', { maximumFractionDigits: 1 }).format(n / 1000) + ' mil';
+const veces = n => '×' + n.toLocaleString('es-CO', { maximumFractionDigits: 1 });
 
-// Resumen en texto de un histograma, para el aria-label del canvas
-// (los lectores de pantalla no ven lo que Chart.js dibuja).
-function resumenBuckets(titulo, buckets, fmt) {
-  const conDatos = buckets.filter(b => b.n > 0).map(b => `${fmt(b)}: ${b.n}`);
-  return `${titulo}. ${conDatos.join('; ')}.`;
+// Distancia geodésica (línea recta) entre dos peajes, en km — fórmula de Haversine
+function km(a, b) {
+  const R = 6371, r = x => x * Math.PI / 180;
+  const h = Math.sin(r(b.lat - a.lat) / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(r(b.lon - a.lon) / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-function css(varName) {
-  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+/* ---- tooltip compartido (mouse y teclado) ---- */
+const tip = document.getElementById('tip');
+function mostrarTip(x, y, html) {
+  tip.innerHTML = html; tip.hidden = false;
+  tip.style.left = Math.min(x + 14, innerWidth - 290) + 'px';
+  tip.style.top = (y + 14) + 'px';
 }
+const ocultarTip = () => { tip.hidden = true; };
 
 async function init() {
   const res = await fetch('data/peajes_clean.json');
-  const peajes = await res.json();
-  const conTarifa = peajes.filter(p => p.tarifa_cat1 != null);
-  const conCoords = peajes.filter(p => p.lat != null && p.lon != null);
-
-  renderKpis(peajes, conTarifa);
-  renderHistogram(conTarifa);
-  renderOperatorSplit(peajes, conTarifa);
-  renderRankings(conTarifa);
-  renderDeptoBars(peajes);
-  renderOperatorBars(peajes);
-  renderCategoryBars(peajes);
-  renderDistanceAnalysis(conCoords);
+  peajes = await res.json();
+  pintar();
+  pintarCercanos();
+  document.addEventListener('peajes:cat', pintar);
 }
 
-// Distancia geodésica (línea recta) entre dos puntos, en km — fórmula de Haversine.
-function haversineKm(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+function pintar() {
+  const cat = Peajes.cat;
+  const con = peajes.filter(p => p.categorias && p.categorias[cat] != null);
+  const vals = con.map(p => p.categorias[cat]);
+  const med = mediana(vals), prom = promedio(vals);
+  const orden = [...con].sort((a, b) => b.categorias[cat] - a.categorias[cat]);
+  const nInv = peajes.filter(p => p.operador_tipo === 'INVIAS').length;
+
+  document.getElementById('claves').innerHTML = `
+    <li><b>${fmt(med)}</b><span>tarifa típica (mediana) para la categoría ${cat}</span></li>
+    <li><b>${fmt(orden[0].categorias[cat])}</b><span>la más alta: ${tc(orden[0].nombre_display)}</span></li>
+    <li><b>${nInv} de ${peajes.length}</b><span>peajes los cobra INVIAS</span></li>`;
+
+  pintarDistribucion(con, cat, med, prom);
+  pintarCategorias(cat);
+  pintarOperadores(con, cat);
+  pintarDepartamentos(cat);
+  pintarExtremos(orden, cat);
 }
 
-function renderDistanceAnalysis(peajes) {
-  // Vecino más cercano de cada peaje (y su distancia), por fuerza bruta —
-  // 180 puntos son ~16.000 pares, trivial para el navegador.
-  const nearest = peajes.map(p => {
-    let best = null, bestDist = Infinity;
-    peajes.forEach(q => {
-      if (q === p) return;
-      const d = haversineKm(p.lat, p.lon, q.lat, q.lon);
-      if (d < bestDist) { bestDist = d; best = q; }
-    });
-    return { p, neighbor: best, dist: bestDist };
-  });
+/* 1. ¿Cuánto cuesta un peaje? — columnas por rango de $2.000 */
+function pintarDistribucion(con, cat, med, prom) {
+  const vals = con.map(p => p.categorias[cat]);
+  const paso = 2000, ancho = 720, alto = 240, top = 46;
+  const nb = Math.ceil((Math.max(...vals) + 1) / paso);
+  const bins = Array.from({ length: nb }, (_, i) => ({ desde: i * paso, ps: [] }));
+  con.forEach(p => bins[Math.floor(p.categorias[cat] / paso)].ps.push(p));
+  const maxN = Math.max(...bins.map(b => b.ps.length));
+  const bw = ancho / nb, colW = Math.min(24, bw - 4);
+  const y = n => top + (alto - top) * (1 - n / maxN);
+  const xm = v => v / (nb * paso) * ancho;
+  const cada = Math.ceil(nb / 7);
+  const etiqueta = b => `${fmt(b.desde)} a ${fmt(b.desde + paso - 1)}: ${b.ps.length} peaje${b.ps.length === 1 ? '' : 's'}`;
 
-  const distances = nearest.map(n => n.dist);
-  const avgDist = distances.reduce((a, b) => a + b, 0) / distances.length;
-  const closest = [...nearest].sort((a, b) => a.dist - b.dist)[0];
-  const farthest = [...nearest].sort((a, b) => b.dist - a.dist)[0];
+  document.getElementById('dist').innerHTML = `
+    <svg viewBox="0 0 ${ancho} ${alto + 34}" role="img" aria-labelledby="distTitulo">
+      <title id="distTitulo">Cantidad de peajes por rango de tarifa, categoría ${cat}. Mediana ${fmt(med)}.</title>
+      ${bins.map((b, i) => b.ps.length ? `<g class="col" data-i="${i}" tabindex="0" role="img" aria-label="${etiqueta(b)}">
+        <rect x="${i * bw}" y="0" width="${bw}" height="${alto}" fill="transparent"/>
+        <path class="d" d="M${i * bw + (bw - colW) / 2},${alto} V${y(b.ps.length) + 4} q0,-4 4,-4 h${colW - 8} q4,0 4,4 V${alto} Z"/>
+        <text class="n" x="${i * bw + bw / 2}" y="${y(b.ps.length) - 6}" text-anchor="middle">${b.ps.length}</text></g>` : '').join('')}
+      <line class="eje" x1="0" x2="${ancho}" y1="${alto + 1}" y2="${alto + 1}"/>
+      ${bins.filter((b, i) => i % cada === 0).map(b => `<text x="${xm(b.desde)}" y="${alto + 22}">${b.desde ? fmtMil(b.desde) : '$0'}</text>`).join('')}
+      <g class="med"><line x1="${xm(med)}" x2="${xm(med)}" y1="0" y2="${alto}"/><text x="${xm(med) + 6}" y="12">mediana ${fmt(med)}</text></g>
+    </svg>`;
+  document.getElementById('explDist').innerHTML =
+    `Cuántos peajes cobran cada rango de precio para la categoría ${cat}. La mitad cuesta menos de <b>${fmt(med)}</b>; el promedio es ${fmt(prom)}. Pasa el cursor (o el foco) por una columna para ver cuáles son.`;
 
-  document.getElementById('distKpiRow').innerHTML = [
-    { v: closest.dist.toFixed(2) + ' km', l: `Par más cercano: ${closest.p.nombre} y ${closest.neighbor.nombre}` },
-    { v: farthest.dist.toFixed(1) + ' km', l: `Peaje más aislado: ${farthest.p.nombre}` },
-    { v: avgDist.toFixed(1) + ' km', l: 'Distancia promedio al vecino más cercano' },
-  ].map(k => `<div class="kpi"><b>${k.v}</b><span>${k.l}</span></div>`).join('');
-
-  // pares únicos más cercanos (evitar mostrar el mismo par dos veces, una por cada lado)
-  const seen = new Set();
-  const pairs = [];
-  [...nearest].sort((a, b) => a.dist - b.dist).forEach(n => {
-    const key = [n.p.id, n.neighbor.id].sort().join('|');
-    if (seen.has(key)) return;
-    seen.add(key);
-    pairs.push(n);
-  });
-
-  document.getElementById('closestPairs').innerHTML = pairs.slice(0, 10).map((n, i) => `
-    <li class="rank-row">
-      <span class="rank-pos" aria-hidden="true">${i + 1}</span>
-      <span class="rank-name">${n.p.nombre_display} ↔ ${n.neighbor.nombre_display}
-        <span class="rank-sub">${n.p.departamento ? toTitle(n.p.departamento) : 'Departamento sin definir'}</span>
-      </span>
-      <span class="rank-val">${n.dist.toFixed(2)} km</span>
-    </li>`).join('');
-
-  const isolated = [...nearest].sort((a, b) => b.dist - a.dist).slice(0, 10);
-  document.getElementById('mostIsolated').innerHTML = isolated.map((n, i) => `
-    <li class="rank-row">
-      <span class="rank-pos" aria-hidden="true">${i + 1}</span>
-      <span class="rank-name">${n.p.nombre_display}
-        <span class="rank-sub">Más cercano: ${n.neighbor.nombre_display}</span>
-      </span>
-      <span class="rank-val">${n.dist.toFixed(1)} km</span>
-    </li>`).join('');
-
-  renderDistanceHistogram(distances);
-}
-
-function renderDistanceHistogram(distances) {
-  const step = 10;
-  const max = Math.ceil(Math.max(...distances) / step) * step;
-  const buckets = [];
-  for (let b = 0; b < max; b += step) buckets.push({ from: b, to: b + step, n: 0 });
-  distances.forEach(d => {
-    const idx = Math.min(Math.floor(d / step), buckets.length - 1);
-    buckets[idx].n++;
-  });
-
-  const distCanvas = document.getElementById('distHistChart');
-  distCanvas.setAttribute('aria-label', resumenBuckets('Peajes según la distancia a su vecino más cercano', buckets, b => `${b.from} a ${b.to} km`));
-  new Chart(distCanvas, {
-    type: 'bar',
-    data: {
-      labels: buckets.map(b => `${b.from}`),
-      datasets: [{
-        data: buckets.map(b => b.n),
-        backgroundColor: css('--public'),
-        borderRadius: 4,
-        maxBarThickness: 28,
-      }],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { title: (items) => {
-          const b = buckets[items[0].dataIndex];
-          return `${b.from} – ${b.to} km`;
-        } } },
-      },
-      scales: {
-        x: { title: { display: true, text: 'km al vecino más cercano', color: css('--ink-soft'), font: { family: 'Outfit', size: 13 } },
-             grid: { display: false }, ticks: { color: css('--ink-soft'), font: { family: 'Outfit', size: 12 } } },
-        y: { beginAtZero: true, ticks: { precision: 0, color: css('--ink-soft'), font: { family: 'Outfit', size: 12 } }, grid: { color: css('--surface-2') } },
-      },
-    },
+  document.querySelectorAll('#dist g.col').forEach(g => {
+    const b = bins[+g.dataset.i];
+    const html = `<b>${etiqueta(b)}</b><br>${b.ps.slice(0, 6).map(p => tc(p.nombre_display)).join(', ')}${b.ps.length > 6 ? '…' : ''}`;
+    g.addEventListener('mousemove', e => mostrarTip(e.clientX, e.clientY, html));
+    g.addEventListener('mouseleave', ocultarTip);
+    g.addEventListener('focus', () => { const r = g.getBoundingClientRect(); mostrarTip(r.left, r.top, html); });
+    g.addEventListener('blur', ocultarTip);
   });
 }
 
-function median(arr) {
-  const s = [...arr].sort((a, b) => a - b);
-  const mid = Math.floor(s.length / 2);
-  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+/* 2. ¿Cuánto más paga un camión? — tarifa promedio por categoría */
+function pintarCategorias(cat) {
+  const prom = Peajes.CATS.map(c => ({ c, v: promedio(peajes.map(p => p.categorias && p.categorias[c]).filter(v => v != null)) }));
+  const max = Math.max(...prom.map(x => x.v));
+  document.getElementById('cats').innerHTML = prom.map(x => `
+    <li class="${x.c === cat ? 'on' : ''}"><span class="etq">${x.c} · ${Peajes.CORTO[x.c]}</span>
+      <span class="pista"><span class="relleno" style="width:${x.v / max * 100}%"></span></span>
+      <span class="val">${fmt(x.v)} <small>${veces(x.v / prom[0].v)}</small></span></li>`).join('');
 }
 
-function renderKpis(peajes, conTarifa) {
-  const t1 = conTarifa.map(p => p.tarifa_cat1);
-  const avg = Math.round(t1.reduce((a, b) => a + b, 0) / t1.length);
-  const med = Math.round(median(t1));
-  const maxP = conTarifa.reduce((a, b) => (b.tarifa_cat1 > a.tarifa_cat1 ? b : a));
-  const nDeptos = new Set(peajes.map(p => p.departamento).filter(Boolean)).size;
-
-  const kpis = [
-    { v: peajes.length, l: 'Peajes en el inventario' },
-    { v: '$' + money(avg), l: 'Tarifa promedio, automóvil' },
-    { v: '$' + money(med), l: 'Tarifa mediana, automóvil' },
-    { v: '$' + money(maxP.tarifa_cat1), l: `Más caro: ${maxP.nombre}` },
-    { v: nDeptos, l: 'Departamentos con peajes' },
-  ];
-  document.getElementById('kpiRow').innerHTML = kpis.map(k =>
-    `<div class="kpi"><b>${k.v}</b><span>${k.l}</span></div>`).join('');
-}
-
-function renderHistogram(conTarifa) {
-  const vals = conTarifa.map(p => p.tarifa_cat1);
-  const step = 3000;
-  const max = Math.ceil(Math.max(...vals) / step) * step;
-  const buckets = [];
-  for (let b = 0; b < max; b += step) buckets.push({ from: b, to: b + step, n: 0 });
-  vals.forEach(v => {
-    const idx = Math.min(Math.floor(v / step), buckets.length - 1);
-    buckets[idx].n++;
-  });
-
-  const histCanvas = document.getElementById('histChart');
-  histCanvas.setAttribute('aria-label', resumenBuckets('Peajes por rango de tarifa de automóvil', buckets, b => `$${money(b.from)} a $${money(b.to)}`));
-  new Chart(histCanvas, {
-    type: 'bar',
-    data: {
-      labels: buckets.map(b => `$${Math.round(b.from / 1000)}k`),
-      datasets: [{
-        data: buckets.map(b => b.n),
-        backgroundColor: css('--accent'),
-        borderRadius: 4,
-        maxBarThickness: 34,
-      }],
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false }, tooltip: {
-        callbacks: { title: (items) => {
-          const b = buckets[items[0].dataIndex];
-          return `$${money(b.from)} – $${money(b.to)}`;
-        } },
-      } },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: css('--ink-soft'), font: { family: 'Outfit', size: 12 } } },
-        y: { beginAtZero: true, ticks: { precision: 0, color: css('--ink-soft'), font: { family: 'Outfit', size: 12 } }, grid: { color: css('--surface-2') } },
-      },
-    },
-  });
-}
-
-function renderOperatorSplit(peajes, conTarifa) {
-  const nInvias = peajes.filter(p => p.operador_tipo === 'INVIAS').length;
-  const nConc = peajes.filter(p => p.operador_tipo === 'Concesión').length;
-  const nDef = peajes.length - nInvias - nConc;
-
-  const avgFor = (tipo) => {
-    const vals = conTarifa.filter(p => p.operador_tipo === tipo).map(p => p.tarifa_cat1);
-    return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+/* 3. ¿INVIAS o concesión? */
+function pintarOperadores(con, cat) {
+  const lado = t => {
+    const g = con.filter(p => p.operador_tipo === t);
+    return { n: peajes.filter(p => p.operador_tipo === t).length, prom: g.length ? promedio(g.map(p => p.categorias[cat])) : null };
   };
+  const inv = lado('INVIAS'), conc = lado('Concesión');
+  const def = peajes.filter(p => p.operador_tipo === 'Por definir').length;
+  document.getElementById('duo').innerHTML = `
+    <div class="lado"><header>${Peajes.talanquera('invias', false, .8).svg}INVIAS</header><b>${inv.n} peajes</b><span>promedio ${fmt(inv.prom)} para la categoría ${cat}</span></div>
+    <div class="lado"><header>${Peajes.talanquera('conc', false, .8).svg}Concesión</header><b>${conc.n} peajes</b><span>promedio ${fmt(conc.prom)} para la categoría ${cat}</span></div>`;
+  document.getElementById('duoNota').textContent = def ? `Otros ${def} peajes tienen el operador por definir en el dataset de INVIAS.` : '';
+}
 
-  document.getElementById('opChart').setAttribute('aria-label',
-    `Peajes por tipo de operador: INVIAS ${nInvias} (tarifa promedio $${money(avgFor('INVIAS'))}), concesión ${nConc} (tarifa promedio $${money(avgFor('Concesión'))}), por definir ${nDef}.`);
-  new Chart(document.getElementById('opChart'), {
-    type: 'doughnut',
-    data: {
-      labels: [`INVIAS (${nInvias})`, `Concesión (${nConc})`, `Por definir (${nDef})`],
-      datasets: [{
-        data: [nInvias, nConc, nDef],
-        backgroundColor: [OP_COLOR.INVIAS, OP_COLOR['Concesión'], OP_COLOR['Por definir']],
-        borderColor: css('--surface'),
-        borderWidth: 3,
-      }],
-    },
-    options: {
-      responsive: true,
-      cutout: '62%',
-      plugins: {
-        legend: { position: 'bottom', labels: { color: css('--ink'), font: { family: 'Outfit', size: 14 }, padding: 14 } },
-        tooltip: {
-          callbacks: {
-            afterLabel: (item) => {
-              const tipo = item.label.startsWith('INVIAS') ? 'INVIAS' : item.label.startsWith('Concesión') ? 'Concesión' : null;
-              return tipo ? `Tarifa promedio automóvil: $${money(avgFor(tipo))}` : '';
-            },
-          },
-        },
-      },
-    },
+/* 4. ¿Dónde hay más peajes? — los 10 departamentos con más peajes */
+function pintarDepartamentos(cat) {
+  const porDep = {};
+  peajes.forEach(p => { if (p.departamento) (porDep[p.departamento] = porDep[p.departamento] || []).push(p); });
+  const deps = Object.entries(porDep)
+    .map(([d, ps]) => { const v = ps.map(p => p.categorias && p.categorias[cat]).filter(v => v != null); return { d, n: ps.length, prom: v.length ? promedio(v) : null }; })
+    .sort((a, b) => b.n - a.n).slice(0, 10);
+  document.getElementById('deptos').innerHTML = deps.map(x => `
+    <li><span class="etq">${tc(x.d)}</span><span class="pista"><span class="relleno" style="width:${x.n / deps[0].n * 100}%"></span></span>
+      <span class="val">${x.n} <small>· prom. ${fmt(x.prom)}</small></span></li>`).join('');
+}
+
+/* 5. Los extremos */
+function pintarExtremos(orden, cat) {
+  const fila = p => `<li>${Peajes.talanquera(Peajes.tipoClase(p), false, .8).svg}<span class="n">${tc(p.nombre_display)}, ${tc(p.departamento)}</span><span class="v">${fmt(p.categorias[cat])}</span></li>`;
+  document.getElementById('caros').innerHTML = orden.slice(0, 6).map(fila).join('');
+  document.getElementById('baratos').innerHTML = orden.slice(-6).reverse().map(fila).join('');
+}
+
+/* 6. Peajes muy seguidos — no depende de la categoría */
+function pintarCercanos() {
+  const conCoords = peajes.filter(p => p.lat != null && p.lon != null);
+  const pares = [], vistos = new Set();
+  conCoords.forEach(a => {
+    let m = null, dm = Infinity;
+    conCoords.forEach(b => { if (a !== b) { const d = km(a, b); if (d < dm) { dm = d; m = b; } } });
+    const k = [a.id, m.id].sort().join('|');
+    if (!vistos.has(k)) { vistos.add(k); pares.push({ a, b: m, d: dm }); }
   });
-}
-
-function renderRankings(conTarifa) {
-  const sorted = [...conTarifa].sort((a, b) => b.tarifa_cat1 - a.tarifa_cat1);
-  const top = sorted.slice(0, 10);
-  const bottom = sorted.slice(-10).reverse();
-
-  const rowHtml = (p, i) => `
-    <li class="rank-row">
-      <span class="rank-pos" aria-hidden="true">${i + 1}</span>
-      <span class="rank-name">${p.nombre_display}<span class="rank-sub">${p.operador || 'Operador no definido'}</span></span>
-      <span class="rank-val">$${money(p.tarifa_cat1)}</span>
-    </li>`;
-
-  document.getElementById('topExpensive').innerHTML = top.map(rowHtml).join('');
-  document.getElementById('topCheap').innerHTML = bottom.map(rowHtml).join('');
-}
-
-function barRows(container, items, colorVar) {
-  const max = Math.max(...items.map(i => i.value));
-  const color = css(colorVar);
-  container.innerHTML = items.map(i => `
-    <div class="bar-row">
-      <span class="bar-label" title="${i.label}">${i.label}</span>
-      <div class="bar-track"><div class="bar-fill" style="width:${(i.value / max * 100).toFixed(1)}%;background:${color}"></div></div>
-      <span class="bar-val">${i.value}</span>
-    </div>`).join('');
-}
-
-function toTitle(s) {
-  return s.toLowerCase().replace(/(^|\s)([a-záéíóúñ])/g, (m, sep, c) => sep + c.toUpperCase());
-}
-
-function renderDeptoBars(peajes) {
-  const counts = {};
-  peajes.forEach(p => { if (p.departamento) counts[p.departamento] = (counts[p.departamento] || 0) + 1; });
-  const items = Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .map(([name, n]) => ({ label: toTitle(name), value: n }));
-  barRows(document.getElementById('deptoBars'), items, '--accent');
-}
-
-function renderOperatorBars(peajes) {
-  const counts = {};
-  peajes.forEach(p => {
-    const key = p.operador || (p.operador_tipo === 'Por definir' ? 'Sin definir' : p.operador_tipo);
-    counts[key] = (counts[key] || 0) + 1;
-  });
-  const items = Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 12)
-    .map(([name, n]) => ({ label: name, value: n }));
-  barRows(document.getElementById('operatorBars'), items, '--accent');
-}
-
-function renderCategoryBars(peajes) {
-  const cats = ['I', 'II', 'III', 'IV', 'V'];
-  const items = cats.map(c => {
-    const vals = peajes.map(p => p.categorias && p.categorias[c]).filter(v => v != null);
-    const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
-    return { label: CAT_LABEL[c], value: avg };
-  });
-  const max = Math.max(...items.map(i => i.value));
-  const color = css('--accent');
-  document.getElementById('categoryBars').innerHTML = items.map(i => `
-    <div class="bar-row">
-      <span class="bar-label" title="${i.label}">${i.label}</span>
-      <div class="bar-track"><div class="bar-fill" style="width:${(i.value / max * 100).toFixed(1)}%;background:${color}"></div></div>
-      <span class="bar-val wide">$${money(i.value)}</span>
-    </div>`).join('');
+  document.getElementById('cerca').innerHTML = pares.sort((x, y) => x.d - y.d).slice(0, 6).map(x => `
+    <li><span class="n">${tc(x.a.nombre_display)} y ${tc(x.b.nombre_display)}, ${tc(x.a.departamento)}</span>
+      <span class="v">${x.d.toLocaleString('es-CO', { maximumFractionDigits: 1 })} km</span></li>`).join('');
 }
 
 init();
