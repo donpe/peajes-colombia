@@ -1,6 +1,6 @@
 /* Calculador de ruta — Peajes de Colombia
    Flujo: municipio origen/destino (autocompletado local) -> ruta real por
-   Mapbox Directions -> cruce geométrico de la ruta contra los 179 peajes ->
+   Mapbox Directions -> cruce geométrico de la ruta contra el inventario de peajes ->
    resumen y mapa. */
 
 const money = n => n == null ? '—' : new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(n);
@@ -230,7 +230,12 @@ function peajesEnRuta(routeLatLon, peajes) {
         ];
       }
     }
-    if (best <= MATCH_THRESHOLD_KM) found.push({ peaje: p, distRuta: best, along: bestAlong, puntoRuta: bestPoint });
+    if (best > MATCH_THRESHOLD_KM) return;
+    // Peajes que cobran en un solo sentido (Túnel de La Línea): en doble
+    // calzada la ruta pasa a pocos metros de la estación del sentido
+    // contrario, así que solo cuenta si la ruta circula con ese rumbo.
+    if (p.cobra_en_sentido && !mismoSentido(rumboEnRuta(pts, cum, bestAlong), p.cobra_en_sentido.rumbo_grados)) return;
+    found.push({ peaje: p, distRuta: best, along: bestAlong, puntoRuta: bestPoint });
   });
 
   found.sort((a, b) => a.along - b.along);
@@ -248,6 +253,26 @@ function peajesEnRuta(routeLatLon, peajes) {
   });
 
   return dedup;
+}
+
+// Rumbo (0-360°, 0 = norte) de la ruta alrededor de la distancia `along`,
+// medido entre puntos ~200 m antes y después para no depender de un solo
+// segmento corto.
+function rumboEnRuta(pts, cum, along) {
+  const puntoEn = d => {
+    const dd = Math.max(0, Math.min(d, cum[cum.length - 1]));
+    let i = cum.findIndex(c => c >= dd);
+    if (i <= 0) return pts[0];
+    const t = (dd - cum[i - 1]) / ((cum[i] - cum[i - 1]) || 1);
+    return [pts[i - 1][0] + t * (pts[i][0] - pts[i - 1][0]), pts[i - 1][1] + t * (pts[i][1] - pts[i - 1][1])];
+  };
+  const [ax, ay] = puntoEn(along - 0.2), [bx, by] = puntoEn(along + 0.2);
+  return (Math.atan2(bx - ax, by - ay) * 180 / Math.PI + 360) % 360;
+}
+
+function mismoSentido(rumbo, rumboCobro) {
+  const diff = Math.abs(((rumbo - rumboCobro) % 360 + 540) % 360 - 180);
+  return diff < 90;
 }
 
 /* Un peaje puede caer geométricamente cerca de la ruta (dentro del margen)

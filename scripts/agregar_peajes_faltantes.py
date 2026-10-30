@@ -62,6 +62,10 @@ def main():
             "territorial": None,
             "departamento": a["departamento"].upper(),
         }
+        # peajes que cobran en un solo sentido (ej. Túnel de La Línea): Ruta
+        # solo los suma si la ruta circula con ese rumbo
+        if a.get("cobra_en_sentido"):
+            nuevo["cobra_en_sentido"] = a["cobra_en_sentido"]
         peajes.append(nuevo)
         ids_existentes.add(a["id"])
         agregados += 1

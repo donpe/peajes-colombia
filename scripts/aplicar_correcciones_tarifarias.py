@@ -12,7 +12,12 @@ Por qué existen estas correcciones:
   Santa Elena queda con una tarifa vieja, y Variante Las Palmas queda con
   todas las categorías en 0 (sin dato).
 
-  Se detectó este caso el 18 de septiembre de 2026 al validar manualmente
+  El 17 de octubre de 2026, al incorporar la versión del 19 sep 2026 del
+  dataset, se encontraron además 5 estaciones a cargo de INVIAS que el
+  dataset no actualizó con la Resolución 0062 de enero (El Corzo, La
+  Parada, Lebrija, Rionegro, San Juan).
+
+  Se detectó el primer caso el 18 de septiembre de 2026 al validar manualmente
   el mapa contra la zona de Rionegro, y se corrigió consultando las fuentes
   oficiales de cada decreto (ver data/raw/correcciones_tarifas_2026.json
   para el detalle y el link de cada una).
@@ -47,6 +52,11 @@ def main():
         antes = dict(p["categorias"])
         p["categorias"].update(c["categorias"])
         p["tarifa_cat1"] = p["categorias"].get("I")
+        # algunas fuentes también muestran un cambio de administrador
+        # (ej. Lebrija/Rionegro: de FINDETER a INVIAS en la Resolución 0062)
+        for campo in ("operador", "operador_tipo"):
+            if campo in c:
+                p[campo] = c[campo]
         print(f"{c['peaje_id']}: {antes} -> {p['categorias']}  ({c['fuente'][:70]}...)")
 
     json.dump(peajes, open(PEAJES_PATH, "w", encoding="utf-8"), ensure_ascii=False, indent=2)

@@ -1,26 +1,119 @@
 {
-  "_descripcion": "Correcciones manuales a tarifas que el dataset de INVIAS (datos.gov.co, 68qj-5xux) tiene desactualizadas o incompletas para peajes que no administra directamente INVIAS. Cada corrección cita su fuente primaria y se aplica con scripts/aplicar_correcciones_tarifarias.py. No se inventa ningún valor: donde no hay fuente verificada para una categoría, esa categoría se deja tal como está en el dato original de INVIAS.",
-  "correcciones": [
-    {
-      "peaje_id": "santa-elena",
-      "motivo": "INVIAS reporta Categoría I en $10.000; la tarifa vigente desde el 17 de enero de 2026 (Decreto Departamental D 2026070000086, Gobernación de Antioquia) es $15.100. Concesión Túnel Aburrá-Oriente S.A.",
-      "fuente": "Decreto D 2026070000086 del 16/01/2026, Gobernación de Antioquia (tuneloriente.com/wp-content/uploads/2026/01/Resolucion-incremento-peajes-2026.pdf), tabla 'ESTACION PEAJE SANTA ELENA'",
-      "fecha_verificacion": "2026-09-18",
-      "categorias": { "I": 15100, "II": 18000, "III": 32900, "IV": 36500, "V": 40500, "VI": 48500 }
-    },
-    {
-      "peaje_id": "variante-las-palmas",
-      "motivo": "INVIAS reporta todas las categorías en 0 (sin tarifa publicada). La tarifa vigente desde el 17 de enero de 2026 sí existe y está publicada por la Gobernación de Antioquia. Concesión Túnel Aburrá-Oriente S.A.",
-      "fuente": "Decreto D 2026070000086 del 16/01/2026, Gobernación de Antioquia, tabla 'ESTACION PEAJE VARIANTE LAS PALMAS'",
-      "fecha_verificacion": "2026-09-18",
-      "categorias": { "I": 20200, "II": 23400, "III": 40200, "IV": 44300, "V": 48800, "VI": 57900 }
-    },
-    {
-      "peaje_id": "pajarito",
-      "motivo": "INVIAS reporta Categoría I en $6.000; la tarifa vigente desde el 17 de enero de 2026 (Decreto Departamental D 2026070000085, concesión Vía Láctea, tramo Pajarito - San Pedro de los Milagros) es $12.900.",
-      "fuente": "Periódico El Oriente, 'Así quedaron las nuevas tarifas de los peajes...' (17/01/2026), citando el Decreto D 2026070000085 de la Gobernación de Antioquia — tabla completa por categoría. No se consiguió el PDF original del decreto (solo el de Aburrá-Oriente, D...086); esta fuente es secundaria y debería reverificarse contra el decreto si se dispone de él.",
-      "fecha_verificacion": "2026-09-18",
-      "categorias": { "I": 12900, "II": 14700, "III": 17700, "IV": 22100, "V": 32000, "VI": 40500, "VII": 46700 }
-    }
-  ]
+ "_descripcion": "Correcciones manuales a tarifas que el dataset de INVIAS (datos.gov.co, 68qj-5xux) tiene desactualizadas o incompletas para peajes que no administra directamente INVIAS. Cada corrección cita su fuente primaria y se aplica con scripts/aplicar_correcciones_tarifarias.py. No se inventa ningún valor: donde no hay fuente verificada para una categoría, esa categoría se deja tal como está en el dato original de INVIAS. Una corrección puede incluir 'operador' y 'operador_tipo' cuando la fuente también muestra que cambió quién administra el peaje.",
+ "correcciones": [
+  {
+   "peaje_id": "santa-elena",
+   "motivo": "INVIAS reporta Categoría I en $10.000; la tarifa vigente desde el 17 de enero de 2026 (Decreto Departamental D 2026070000086, Gobernación de Antioquia) es $15.100. Concesión Túnel Aburrá-Oriente S.A.",
+   "fuente": "Decreto D 2026070000086 del 16/01/2026, Gobernación de Antioquia (tuneloriente.com/wp-content/uploads/2026/01/Resolucion-incremento-peajes-2026.pdf), tabla 'ESTACION PEAJE SANTA ELENA'",
+   "fecha_verificacion": "2026-09-18",
+   "categorias": {
+    "I": 15100,
+    "II": 18000,
+    "III": 32900,
+    "IV": 36500,
+    "V": 40500,
+    "VI": 48500
+   }
+  },
+  {
+   "peaje_id": "variante-las-palmas",
+   "motivo": "INVIAS reporta todas las categorías en 0 (sin tarifa publicada). La tarifa vigente desde el 17 de enero de 2026 sí existe y está publicada por la Gobernación de Antioquia. Concesión Túnel Aburrá-Oriente S.A.",
+   "fuente": "Decreto D 2026070000086 del 16/01/2026, Gobernación de Antioquia, tabla 'ESTACION PEAJE VARIANTE LAS PALMAS'",
+   "fecha_verificacion": "2026-09-18",
+   "categorias": {
+    "I": 20200,
+    "II": 23400,
+    "III": 40200,
+    "IV": 44300,
+    "V": 48800,
+    "VI": 57900
+   }
+  },
+  {
+   "peaje_id": "pajarito",
+   "motivo": "INVIAS reporta Categoría I en $6.000; la tarifa vigente desde el 17 de enero de 2026 (Decreto Departamental D 2026070000085, concesión Vía Láctea, tramo Pajarito - San Pedro de los Milagros) es $12.900.",
+   "fuente": "Periódico El Oriente, 'Así quedaron las nuevas tarifas de los peajes...' (17/01/2026), citando el Decreto D 2026070000085 de la Gobernación de Antioquia — tabla completa por categoría. No se consiguió el PDF original del decreto (solo el de Aburrá-Oriente, D...086); esta fuente es secundaria y debería reverificarse contra el decreto si se dispone de él.",
+   "fecha_verificacion": "2026-09-18",
+   "categorias": {
+    "I": 12900,
+    "II": 14700,
+    "III": 17700,
+    "IV": 22100,
+    "V": 32000,
+    "VI": 40500,
+    "VII": 46700
+   }
+  },
+  {
+   "peaje_id": "el-corzo",
+   "motivo": "El dataset de INVIAS (versión del 19 sep 2026) no refleja el ajuste de enero de 2026 para esta estación, aunque sí lo aplicó a las otras de la misma resolución. Reporta Categoría I en $11.800 (tarifa 2025); la vigente es $12.400.",
+   "categorias": {
+    "I": 12400,
+    "II": 18500,
+    "III": 16200,
+    "IV": 21300,
+    "V": 36200,
+    "VI": 48800,
+    "VII": 52800
+   },
+   "fuente": "Resolución 0062 del 15/01/2026 de INVIAS (vigente desde el 16/01/2026), tabla 'Tarifas Peajes 2026' publicada en invias.gov.co/publicaciones/9378 (imagen invias.gov.co/info/invias_se/media/galeria9036.png)",
+   "fecha_verificacion": "2026-10-17"
+  },
+  {
+   "peaje_id": "la-parada",
+   "motivo": "El dataset de INVIAS (versión del 19 sep 2026) no refleja el ajuste de enero de 2026 para esta estación, aunque sí lo aplicó a las otras de la misma resolución. Reporta $2.700 en todas las categorías (tarifa 2025); la vigente es $2.800.",
+   "categorias": {
+    "I": 2800,
+    "II": 2800,
+    "III": 2800,
+    "IV": 2800,
+    "V": 2800
+   },
+   "fuente": "Resolución 0062 del 15/01/2026 de INVIAS (vigente desde el 16/01/2026), tabla 'Tarifas Peajes 2026' publicada en invias.gov.co/publicaciones/9378 (imagen invias.gov.co/info/invias_se/media/galeria9036.png)",
+   "fecha_verificacion": "2026-10-17"
+  },
+  {
+   "peaje_id": "lebrija",
+   "motivo": "El dataset de INVIAS (versión del 19 sep 2026) no refleja el ajuste de enero de 2026 para esta estación, aunque sí lo aplicó a las otras de la misma resolución. Además lo sigue atribuyendo a FINDETER con tarifa de $7.200, pero la resolución lo lista entre las estaciones a cargo de INVIAS con Categoría I en $11.500.",
+   "operador": "INVIAS",
+   "operador_tipo": "INVIAS",
+   "categorias": {
+    "I": 11500,
+    "II": 13000,
+    "III": 31100,
+    "IV": 40900,
+    "V": 47000
+   },
+   "fuente": "Resolución 0062 del 15/01/2026 de INVIAS (vigente desde el 16/01/2026), tabla 'Tarifas Peajes 2026' publicada en invias.gov.co/publicaciones/9378 (imagen invias.gov.co/info/invias_se/media/galeria9036.png)",
+   "fecha_verificacion": "2026-10-17"
+  },
+  {
+   "peaje_id": "rionegro",
+   "motivo": "El dataset de INVIAS (versión del 19 sep 2026) no refleja el ajuste de enero de 2026 para esta estación, aunque sí lo aplicó a las otras de la misma resolución. Además lo sigue atribuyendo a FINDETER con tarifa de $7.200, pero la resolución lo lista entre las estaciones a cargo de INVIAS con Categoría I en $11.500.",
+   "operador": "INVIAS",
+   "operador_tipo": "INVIAS",
+   "categorias": {
+    "I": 11500,
+    "II": 13000,
+    "III": 31100,
+    "IV": 40900,
+    "V": 47000
+   },
+   "fuente": "Resolución 0062 del 15/01/2026 de INVIAS (vigente desde el 16/01/2026), tabla 'Tarifas Peajes 2026' publicada en invias.gov.co/publicaciones/9378 (imagen invias.gov.co/info/invias_se/media/galeria9036.png)",
+   "fecha_verificacion": "2026-10-17"
+  },
+  {
+   "peaje_id": "san-juan",
+   "motivo": "El dataset de INVIAS (versión del 19 sep 2026) deja vacía la Categoría I de San Juan (La Guajira), aunque las demás categorías sí coinciden con la resolución. La Categoría I vigente es $13.000.",
+   "categorias": {
+    "I": 13000,
+    "II": 14700,
+    "III": 30000,
+    "IV": 38000,
+    "V": 43000
+   },
+   "fuente": "Resolución 0062 del 15/01/2026 de INVIAS (vigente desde el 16/01/2026), tabla 'Tarifas Peajes 2026' publicada en invias.gov.co/publicaciones/9378 (imagen invias.gov.co/info/invias_se/media/galeria9036.png)",
+   "fecha_verificacion": "2026-10-17"
+  }
+ ]
 }

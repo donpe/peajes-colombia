@@ -1,7 +1,8 @@
 """
 Limpieza y estructuración del inventario de peajes de Colombia (INVIAS).
 
-Entrada:  Peajes_20260916.csv (fuente: hermes.invias.gov.co)
+Entrada:  Peajes_20261017.csv (fuente: datos.gov.co, dataset 68qj-5xux; versión
+          del 19 sep 2026, descargada el 17 oct 2026)
 Salidas:  data/peajes_clean.csv   -- tabla plana, una fila por peaje
           data/peajes_clean.json  -- mismo contenido, para consumo web
           data/quality_report.md  -- resumen de problemas encontrados/corregidos
@@ -10,7 +11,8 @@ Reglas de limpieza aplicadas:
   1. Coordenadas: se usa SIEMPRE la columna `point` (WKT "POINT (lon lat)"),
      porque las columnas sueltas Latitud/Longitud están corruptas en 145/179
      filas (duplicadas entre sí o en 0,0).
-  2. Tarifas: strings tipo "12,200" (coma = separador de miles) -> int.
+  2. Tarifas: strings tipo "12,200" o "12200" -> int (la exportación de
+     datos.gov.co dejó de usar coma de miles en la versión del 19 sep 2026).
      "0" se interpreta como "no aplica / exento" -> None, para no mezclarlo
      con tarifas reales bajas.
   3. Operador: se normaliza `Responsable` (trim, capitalización, acentos,
@@ -24,6 +26,10 @@ Reglas de limpieza aplicadas:
      manteniendo el nombre original intacto.
   5. Teléfonos y responsables vacíos o "Por Definir" se normalizan a None.
   6. Se conserva un id estable (slug) por peaje para usarlo en la app web.
+     Si INVIAS renombra un peaje, ID_HEREDADO mantiene el id anterior para
+     no romper enlaces compartidos (?peaje=…).
+  7. Nombres en mayúsculas: INVIAS mezcla "RÍO FRÍO" con "Río Frío" desde la
+     versión del 19 sep 2026; se unifican en mayúsculas como el resto.
 """
 import csv
 import json
@@ -33,7 +39,19 @@ from collections import defaultdict
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-SRC = BASE / "Peajes_20260916.csv"
+SRC = BASE / "Peajes_20261017.csv"
+
+# INVIAS renombró "LOS GARZONES 1/2" a "Los Garzones I/II" (sep 2026): mismo
+# peaje, mismo código. Se conserva el id viejo para no romper enlaces.
+ID_HEREDADO = {
+    "los-garzones-i": "los-garzones-1",
+    "los-garzones-ii": "los-garzones-2",
+    # ver nombre_peaje(): "TRINIDAD ll" ahora se escribe "TRINIDAD II"
+    "san-bernardo-trinidad-ii": "san-bernardo-trinidad-ll",
+    # "SUPIA" y "SUPÍA" compartían el id "supia" (el mapa mostraba solo el
+    # segundo); el de La Felisa - La Pintada conserva el id viejo
+    "supia-la-felisa-la-pintada": "supia",
+}
 OUT_DIR = BASE / "data"
 OUT_DIR.mkdir(exist_ok=True)
 
@@ -133,6 +151,13 @@ def operator_type(name: str) -> str:
     return "INVIAS" if ("invias" in n or "vipsa" in n) else "Concesión"
 
 
+def nombre_peaje(r) -> str:
+    name = (clean_text(r["Nombre Peaje"]) or "SIN NOMBRE").upper()
+    # INVIAS escribe el romano II con eles minúsculas ("TRINIDAD ll"); en
+    # mayúsculas quedaría "LL"
+    return re.sub(r"\bLL\b", "II", name)
+
+
 def main():
     with open(SRC, encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
@@ -141,7 +166,9 @@ def main():
 
     name_counts = defaultdict(int)
     for r in rows:
-        name_counts[clean_text(r["Nombre Peaje"])] += 1
+        # por slug, no por texto: "SUPIA" y "SUPÍA" son dos peajes distintos
+        # que sin desambiguar comparten id
+        name_counts[slugify(nombre_peaje(r))] += 1
 
     seen_name_idx = defaultdict(int)
     clean_rows = []
@@ -149,11 +176,11 @@ def main():
 
     for r in rows:
         lat, lon = parse_point(r["point"])
-        name = clean_text(r["Nombre Peaje"]) or "SIN NOMBRE"
+        name = nombre_peaje(r)
 
         # desambiguar nombres duplicados
         display_name = name
-        if name_counts[name] > 1:
+        if name_counts[slugify(name)] > 1:
             seen_name_idx[name] += 1
             display_name = f"{name} ({r['Sector'].strip() or r['Ubicación'].strip()})"
 
@@ -168,7 +195,8 @@ def main():
                 categorias[key] = val
 
         clean = {
-            "id": slugify(display_name) or slugify(r["Código Peaje"]) or f"peaje-{len(clean_rows)+1}",
+            "id": ID_HEREDADO.get(slugify(display_name)) or slugify(display_name)
+                  or slugify(r["Código Peaje"]) or f"peaje-{len(clean_rows)+1}",
             "nombre": name,
             "nombre_display": display_name,
             "lat": lat,

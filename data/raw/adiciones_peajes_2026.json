@@ -16,7 +16,68 @@
       "departamento": "Antioquia",
       "fuente_tarifa": "Decreto D 2026070000086 del 16/01/2026, Gobernación de Antioquia, tabla 'ESTACIONES DE PEAJE TÚNEL DE ORIENTE'",
       "fecha_verificacion": "2026-09-18",
-      "categorias": { "I": 26300, "II": 32900, "III": 58600, "IV": 65300, "V": 72500, "VI": 87100 }
+      "categorias": {
+        "I": 26300,
+        "II": 32900,
+        "III": 58600,
+        "IV": 65300,
+        "V": 72500,
+        "VI": 87100
+      }
+    },
+    {
+      "id": "tunel-de-la-linea-tolima",
+      "nombre": "TÚNEL DE LA LÍNEA (TOLIMA)",
+      "nombre_display": "TÚNEL DE LA LÍNEA (TOLIMA)",
+      "motivo": "Las dos estaciones de peaje del Túnel de La Línea (Ibagué-Armenia, a cargo de INVIAS) están en la resolución de tarifas 2026 de INVIAS pero no en su dataset abierto. Cada estación cobra en un solo sentido, así que quien cruza paga una sola vez: Portal Bermellón (Tolima) cobra de Ibagué hacia Armenia y Portal Américas (Quindío) de Armenia hacia Ibagué (El Tiempo, 2020). Se verificó con rutas reales en ambos sentidos (OSRM, 17 oct 2026): Armenia→Ibagué pasa a 0 m de la estación del Quindío y Ibagué→Armenia a 1 m de la del Tolima, pero cada ruta también pasa a 40-170 m de la estación contraria (doble calzada con el mismo nombre de vía). Por eso cada estación lleva 'cobra_en_sentido': el rumbo de circulación en que cobra, medido sobre esas rutas; Ruta solo la suma si la ruta va en ese sentido.",
+      "lat": 4.44527,
+      "lon": -75.51845,
+      "fuente_coordenadas": "OpenStreetMap, nodes 7878280643 y 13620768413, barrier=toll_booth name='Peaje Túnel de la Línea Tolíma', sobre la calzada oneway 'Vía Armenia - La Línea' (ruta 40) en sentido oeste (API de OSM, consultado 2026-10-17)",
+      "ubicacion": "Portal Bermellón, Túnel de La Línea (Cajamarca)",
+      "sector": "Ibagué - Armenia",
+      "operador": "INVIAS",
+      "operador_tipo": "INVIAS",
+      "departamento": "Tolima",
+      "cobra_en_sentido": {
+        "rumbo_grados": 291,
+        "descripcion": "Ibagué → Armenia"
+      },
+      "fuente_tarifa": "Resolución 0062 del 15/01/2026 de INVIAS, tabla 'Tarifas Peajes 2026' (invias.gov.co/publicaciones/9378), filas 'T. LA LINEA TOLIMA' y 'T. LA LINEA QUINDIO'. Confirmado por El Quindiano (ene 2026) y Alerta Tolima.",
+      "fecha_verificacion": "2026-10-17",
+      "categorias": {
+        "I": 13000,
+        "II": 14600,
+        "III": 29800,
+        "IV": 37900,
+        "V": 42900
+      }
+    },
+    {
+      "id": "tunel-de-la-linea-quindio",
+      "nombre": "TÚNEL DE LA LÍNEA (QUINDÍO)",
+      "nombre_display": "TÚNEL DE LA LÍNEA (QUINDÍO)",
+      "motivo": "Las dos estaciones de peaje del Túnel de La Línea (Ibagué-Armenia, a cargo de INVIAS) están en la resolución de tarifas 2026 de INVIAS pero no en su dataset abierto. Cada estación cobra en un solo sentido, así que quien cruza paga una sola vez: Portal Bermellón (Tolima) cobra de Ibagué hacia Armenia y Portal Américas (Quindío) de Armenia hacia Ibagué (El Tiempo, 2020). Se verificó con rutas reales en ambos sentidos (OSRM, 17 oct 2026): Armenia→Ibagué pasa a 0 m de la estación del Quindío y Ibagué→Armenia a 1 m de la del Tolima, pero cada ruta también pasa a 40-170 m de la estación contraria (doble calzada con el mismo nombre de vía). Por eso cada estación lleva 'cobra_en_sentido': el rumbo de circulación en que cobra, medido sobre esas rutas; Ruta solo la suma si la ruta va en ese sentido.",
+      "lat": 4.5237,
+      "lon": -75.58945,
+      "fuente_coordenadas": "OpenStreetMap, nodes 10142412768 y 13620649544, barrier=toll_booth name='Peaje Túnel de la Línea - Quindío', sobre la calzada oneway 'Vía Armenia - La Línea' (ruta 40) en sentido sur, hacia el túnel (API de OSM, consultado 2026-10-17)",
+      "ubicacion": "Portal Américas, Túnel de La Línea (Calarcá)",
+      "sector": "Armenia - Ibagué",
+      "operador": "INVIAS",
+      "operador_tipo": "INVIAS",
+      "departamento": "Quindío",
+      "cobra_en_sentido": {
+        "rumbo_grados": 177,
+        "descripcion": "Armenia → Ibagué"
+      },
+      "fuente_tarifa": "Resolución 0062 del 15/01/2026 de INVIAS, tabla 'Tarifas Peajes 2026' (invias.gov.co/publicaciones/9378), filas 'T. LA LINEA TOLIMA' y 'T. LA LINEA QUINDIO'. Confirmado por El Quindiano (ene 2026) y Alerta Tolima.",
+      "fecha_verificacion": "2026-10-17",
+      "categorias": {
+        "I": 13000,
+        "II": 14600,
+        "III": 29800,
+        "IV": 37900,
+        "V": 42900
+      }
     }
   ]
 }

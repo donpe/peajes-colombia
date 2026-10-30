@@ -98,7 +98,8 @@ def main():
     # (Bazurto/Manga, Cartagena) cuyas coordenadas caen sobre el agua,
     # fuera del polígono terrestre de Bolívar.
     for p in peajes:
-        if p["departamento"] is None and p["nombre_display"] == "BAZURTO  (MANGA)":
+        # por id, no por nombre: INVIAS cambia espacios/mayúsculas entre versiones
+        if p["departamento"] is None and p["id"] == "bazurto-manga":
             p["departamento"] = "BOLÍVAR"
             sin_depto.remove(p["nombre_display"])
 

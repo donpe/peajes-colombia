@@ -315,6 +315,7 @@ function showDetail(p) {
     <h2 class="d-name" id="detailName">${p.nombre_display}</h2>
     <div class="d-route">${p.ubicacion || ''}${p.sector ? ' · Sector: ' + p.sector : ''}</div>
     <div class="d-op">Operador: <b>${p.operador || 'No definido'}</b></div>
+    ${p.cobra_en_sentido ? `<p class="d-note">Cobra solo en sentido <b>${p.cobra_en_sentido.descripcion}</b>. En el sentido contrario se paga en la otra estación del túnel.</p>` : ''}
     <table class="tariff-table">
       <thead><tr><th>Tarifa por categoría</th><th>Valor</th></tr></thead>
       <tbody>${rows || '<tr><td colspan="2" style="color:var(--ink-faint)">Sin tarifas registradas</td></tr>'}</tbody>

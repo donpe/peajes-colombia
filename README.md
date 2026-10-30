@@ -8,7 +8,7 @@ de INVIAS ([datos.gov.co](https://www.datos.gov.co/Transporte/Peajes/68qj-5xux))
 
 ## Qué contiene
 
-- **Mapa** ([docs/index.html](docs/index.html)) — los 179 peajes sobre un mapa real
+- **Mapa** ([docs/index.html](docs/index.html)) — los 181 peajes sobre un mapa real
   (OpenStreetMap), agrupados por cercanía, filtrables por departamento y tipo de
   operador, con ficha de detalle por peaje.
 - **Ruta** ([docs/ruta.html](docs/ruta.html)) — calculadora de viaje: origen/destino
@@ -24,7 +24,7 @@ de INVIAS ([datos.gov.co](https://www.datos.gov.co/Transporte/Peajes/68qj-5xux))
 ## Estructura del repositorio
 
 ```
-Peajes_20260916.csv   Dataset original de INVIAS (snapshot 16 sep 2026)
+Peajes_20261017.csv   Dataset original de INVIAS (versión del 19 sep 2026, descargada el 17 oct 2026)
 scripts/               Pipeline de limpieza y transformación de datos (Python)
 data/                  Datos limpios/derivados (JSON, CSV) + fuentes auxiliares en data/raw/
 docs/                  El sitio web servido por GitHub Pages (HTML/CSS/JS estático)

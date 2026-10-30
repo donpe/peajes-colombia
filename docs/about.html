@@ -48,11 +48,11 @@
 
   <section class="card">
     <h2>Qué contiene el sitio</h2>
-    <p class="card-sub">Cuatro secciones, todas alimentadas por el mismo inventario de 179 peajes</p>
+    <p class="card-sub">Cuatro secciones, todas alimentadas por el mismo inventario de 181 peajes</p>
     <div class="chart-grid">
       <div class="source-card">
         <h3 class="source-name">Mapa</h3>
-        <p class="source-desc">Los 179 peajes sobre un mapa real (OpenStreetMap), agrupados por cercanía, con filtro por departamento y por tipo de operador, y ficha de detalle de cada peaje al hacer clic.</p>
+        <p class="source-desc">Los 181 peajes sobre un mapa real (OpenStreetMap), agrupados por cercanía, con filtro por departamento y por tipo de operador, y ficha de detalle de cada peaje al hacer clic.</p>
         <a class="source-link" href="index.html">Ir al mapa →</a>
       </div>
       <div class="source-card">
@@ -74,7 +74,7 @@
 
   <section class="card">
     <h2>Fuente principal de datos</h2>
-    <p class="card-sub">El inventario de los 179 peajes (ubicación, tarifas, operador, contacto)</p>
+    <p class="card-sub">El inventario de los 181 peajes (ubicación, tarifas, operador, contacto)</p>
     <div class="source-card">
       <div class="source-top">
         <h3 class="source-name">Peajes, Datos Abiertos Colombia</h3>
@@ -90,8 +90,8 @@
       <dl class="source-meta">
         <div><dt>Publicado por</dt><dd>INVÍAS</dd></div>
         <div><dt>Publicado el</dt><dd>18 oct 2024</dd></div>
-        <div><dt>Última actualización (origen)</dt><dd>19 ago 2026</dd></div>
-        <div><dt>Snapshot usado en este proyecto</dt><dd>16 sep 2026</dd></div>
+        <div><dt>Versión usada en este proyecto</dt><dd>19 sep 2026</dd></div>
+        <div><dt>Descargada el</dt><dd>17 oct 2026</dd></div>
         <div><dt>Licencia</dt><dd>CC BY-SA 4.0</dd></div>
         <div><dt>Identificador del dataset</dt><dd translate="no">68qj-5xux</dd></div>
       </dl>
@@ -143,11 +143,27 @@
         <p class="source-desc">
           Los tiles (calles, relieve, nombres de lugares) de los mapas interactivos son de OpenStreetMap,
           un proyecto de cartografía libre y colaborativo. © colaboradores de OpenStreetMap. También se usó
-          su base de datos (vía Overpass API) para verificar la coordenada exacta del peaje Sajonia
-          (nodo <code>barrier=toll_booth</code>), que no está en el inventario de INVIAS, y para confirmar
-          que “El Placer” y “El Placer 2” son el mismo peaje duplicado.
+          su base de datos para verificar la coordenada exacta de los peajes que no están en el inventario
+          de INVIAS (Sajonia y las dos estaciones del Túnel de La Línea, nodos <code>barrier=toll_booth</code>),
+          el sentido en que cobra cada estación del túnel, y para confirmar que “El Placer” y “El Placer 2”
+          son el mismo peaje duplicado.
         </p>
         <a class="source-link" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">Derechos de autor de OSM ↗</a>
+      </div>
+
+      <div class="source-card">
+        <div class="source-top">
+          <h3 class="source-name">Resolución 0062 de 2026, INVIAS</h3>
+          <span class="source-tag support">Corrección de tarifas</span>
+        </div>
+        <p class="source-desc">
+          Resolución del 15 de enero de 2026 que sube 5,10% (IPC) las tarifas de las 38 estaciones a cargo de
+          INVIAS desde el 16 de enero. Su tabla oficial sirvió para comprobar la versión del 19 sep 2026 del
+          dataset, que trae el alza en casi todas las estaciones. Cinco quedaron sin actualizar (El Corzo,
+          La Parada, Lebrija, Rionegro y San Juan) y se corrigieron con esta tabla. También es la fuente de
+          las dos estaciones del Túnel de La Línea, que no están en el dataset.
+        </p>
+        <a class="source-link" href="https://www.invias.gov.co/publicaciones/9378/invias-actualiza-tarifas-de-las-estaciones-de-peaje-para-el-ano-2026/" target="_blank" rel="noopener">Ver publicación de INVIAS ↗</a>
       </div>
 
       <div class="source-card">
@@ -249,7 +265,7 @@
       <li>
         <div class="step-body">
           <b>Correcciones y adiciones verificadas contra fuente oficial</b>
-          <p>Validando el inventario contra la realidad (no solo contra el CSV) se encontraron y corrigieron varios casos: tarifas desactualizadas en peajes de concesiones departamentales, un peaje real (Sajonia, Túnel de Oriente) que nunca se había agregado al inventario de INVIAS, y un peaje duplicado (El Placer, Nariño) registrado dos veces con datos incompletos en cada copia. Cada caso está documentado por separado en <code>data/raw/</code> con su fuente primaria citada (decretos y resoluciones oficiales) y aplicado por un script propio. Nunca se agrega o cambia un valor sin poder señalar de dónde salió.</p>
+          <p>Validando el inventario contra la realidad (no solo contra el CSV) se encontraron y corrigieron varios casos: tarifas desactualizadas en peajes de concesiones departamentales, peajes reales que nunca se habían agregado al inventario de INVIAS (Sajonia en el Túnel de Oriente, y las dos estaciones del Túnel de La Línea, cada una con su sentido de cobro para no sumarla dos veces en Ruta), y un peaje duplicado (El Placer, Nariño) registrado dos veces con datos incompletos en cada copia. Cada caso está documentado por separado en <code>data/raw/</code> con su fuente primaria citada (decretos y resoluciones oficiales) y aplicado por un script propio. Nunca se agrega o cambia un valor sin poder señalar de dónde salió.</p>
         </div>
       </li>
       <li>
@@ -267,7 +283,7 @@
       <li>
         <div class="step-body">
           <b>Los datos no están en vivo y pueden tener vacíos sin detectar</b>
-          <p>Es un snapshot al 16 de septiembre de 2026. INVIAS actualiza tarifas periódicamente (usualmente indexadas al IPC) y esos cambios posteriores no se reflejan automáticamente. Las correcciones ya hechas salieron de validar manualmente zonas puntuales del mapa, no de revisar cada peaje contra su fuente real uno por uno, así que es posible que existan más tarifas desactualizadas, peajes duplicados o faltantes que este proyecto todavía no ha detectado. Un puñado de peajes (marcados como siniestrados o no operativos en el dataset original) tampoco tienen tarifa de categoría I por la misma razón: se prefiere no mostrar el dato antes que inventar un valor.</p>
+          <p>Usa la versión del dataset publicada el 19 de septiembre de 2026. INVIAS actualiza tarifas periódicamente (usualmente indexadas al IPC) y esos cambios posteriores no se reflejan automáticamente. Además, INVIAS tarda en subirlos al dataset abierto: el alza de enero de 2026 apareció recién en septiembre. Las correcciones ya hechas salieron de validar manualmente zonas puntuales del mapa, no de revisar cada peaje contra su fuente real uno por uno, así que es posible que existan más tarifas desactualizadas, peajes duplicados o faltantes que este proyecto todavía no ha detectado. Un puñado de peajes (marcados como siniestrados o no operativos en el dataset original) tampoco tienen tarifa de categoría I por la misma razón: se prefiere no mostrar el dato antes que inventar un valor.</p>
         </div>
       </li>
       <li>

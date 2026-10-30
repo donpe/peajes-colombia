@@ -2,7 +2,7 @@
 
 > Inventario abierto, mapa interactivo y calculador de ruta de los peajes de la Red Vial Nacional de Colombia, construido sobre datos públicos de INVIAS (datos.gov.co) y verificado contra fuentes oficiales (decretos y resoluciones de tarifas). Proyecto independiente de visualización de datos; no es un canal oficial de INVIAS.
 
-Cubre 179 peajes: ubicación (lat/lon), tarifas vigentes por categoría de vehículo (I a VII), operador (INVIAS o concesión privada), departamento y sector vial. Los datos son un snapshot con fecha de corte, no una fuente en vivo — ver about.html para la fecha exacta y las fuentes citadas de cada corrección.
+Cubre 181 peajes: ubicación (lat/lon), tarifas vigentes por categoría de vehículo (I a VII), operador (INVIAS o concesión privada), departamento y sector vial. Los datos son un snapshot con fecha de corte, no una fuente en vivo — ver about.html para la fecha exacta y las fuentes citadas de cada corrección.
 
 ## Páginas
 
