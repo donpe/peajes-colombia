@@ -199,6 +199,7 @@ code{font-size:.9em;background:var(--surface);padding:1px 5px}
 .route-badge{font-size:13px;font-weight:600;background:var(--accent);color:var(--accent-ink);padding:1px 8px}
 .route-note{margin:20px 0 0;font-size:var(--step-small);color:var(--muted);max-width:52ch}
 .route-note a{color:inherit}
+.viaje .tiquete{width:100%;max-width:560px}
 .creditos{margin:48px 0 0;font-size:var(--step-small);color:var(--muted)}
 .creditos a{color:inherit}
 .viaje .mapa{position:relative;min-width:0;background:var(--surface)}
