@@ -23,6 +23,7 @@ let selDestino = null;
 let map, routeLayer, tollLayerGroup, fondoLayer;
 let inventario = [];   // los peajes, cargados una vez al abrir la página
 let tollMarkers = [];  // marcadores de peaje de la ruta activa, en el mismo orden que la lista
+let peajeActivo = -1;  // peaje elegido en el tiquete o en el mapa (índice en matches)
 let rutasCalculadas = [];  // [{ ruta, matches }, ...] — todas las alternativas de la última búsqueda
 let rutaActivaIdx = 0;
 
@@ -551,6 +552,7 @@ function mostrarResultados({ encuadrar = true } = {}) {
   const { ruta, matches } = rutasCalculadas[rutaActivaIdx];
   const cat = Peajes.cat;
   const { conTarifa, total } = statsDe(matches, cat);
+  if (encuadrar) peajeActivo = -1;   // ruta nueva: nada elegido
   document.getElementById('resultsWrap').hidden = false;
 
   document.getElementById('rTitulo').textContent = `${selOrigen.n} → ${selDestino.n}`;
@@ -558,62 +560,40 @@ function mostrarResultados({ encuadrar = true } = {}) {
   document.getElementById('rSub').textContent =
     `${ruta.distanceKm.toFixed(0)} km · ~${formatDuracion(ruta.durationH)} con tráfico · ${conTarifa.length} peaje${conTarifa.length === 1 ? '' : 's'} · categoría ${cat}`;
 
-  pintarTira(ruta, matches, cat);
-  pintarTiquete(matches, cat, total);
+  pintarTiquete(ruta, matches, cat, total);
   renderMapa(ruta, matches, encuadrar);
 }
 
-/* La tira: la ruta dibujada como una vía recta de origen a destino, con cada
-   peaje en su kilómetro. Si dos peajes quedan muy juntos en la tira, la
-   etiqueta del segundo baja para no montarse sobre la del primero. */
-function pintarTira(ruta, matches, cat) {
-  const total = ruta.distanceKm || 1;
-  const pos = km => Math.min(94, Math.max(6, km / total * 100));
-  // separación mínima entre etiquetas: ~76px medidos sobre el ancho real del tramo
-  // (en el teléfono el tramo mide ~200px, así que el porcentaje cambia)
-  const anchoTramo = Math.max(160, (document.getElementById('tira').clientWidth || 440) - 170);
-  const minimo = 76 / anchoTramo * 100;
-  // cada etiqueta va en la primera fila donde no choca; si no cabe en ninguna,
-  // en la que tenga más espacio. La fila 0 muestra el km, las demás solo la tarifa.
-  const ultimo = [-100, -100, -100];
-  const puntos = matches.map((m, i) => {
-    const x = pos(m.along);
-    let fila = ultimo.findIndex(u => x - u >= minimo);
-    if (fila < 0) fila = ultimo.indexOf(Math.min(...ultimo));
-    ultimo[fila] = x;
-    const tarifa = m.peaje.categorias ? m.peaje.categorias[cat] : null;
-    return `<button type="button" class="p${fila ? ' alt' : ''}" data-i="${i}" style="left:${x}%;--fila:${fila}"
-        aria-label="${tc(m.peaje.nombre_display)}, km ${m.along.toFixed(0)}, ${tarifa != null ? fmt(tarifa) : 'no aplica a esta categoría'}">
-      <span class="km">km ${m.along.toFixed(0)}</span>${Peajes.talanquera(Peajes.tipoClase(m.peaje), true, 1.1).svg}
-      <span class="nom">${tarifa != null ? fmt(tarifa) : '—'}</span></button>`;
-  }).join('');
-  const filas = ultimo.filter(u => u > -100).length;
-  const el = document.getElementById('tira');
-  el.setAttribute('aria-label', `La ruta como una vía recta de ${selOrigen.n} a ${selDestino.n}, con sus peajes`);
-  el.innerHTML = `<span class="ciudad">${selOrigen.n}</span><div class="tramo" style="height:${64 + 20 * filas}px"><div class="via"></div><span class="extremo ini"></span><span class="extremo fin"></span>${puntos}</div><span class="ciudad">${selDestino.n}</span>`;
-  el.querySelectorAll('button.p').forEach(b => b.addEventListener('click', () => irAPeajeEnMapa(+b.dataset.i)));
-}
-
-function pintarTiquete(matches, cat, total) {
-  const filas = matches.length ? matches.map((m, i) => {
+/* El tiquete es también la ruta: una vía vertical de origen (arriba) a destino
+   (abajo), con cada peaje como su número sobre la vía, el mismo del mapa. */
+function pintarTiquete(ruta, matches, cat, total) {
+  const filas = matches.map((m, i) => {
     const tarifa = m.peaje.categorias ? m.peaje.categorias[cat] : null;
     const sentido = m.peaje.cobra_en_sentido ? ` · cobra solo ${m.peaje.cobra_en_sentido.descripcion}` : '';
-    return `<button type="button" class="fila${tarifa == null ? ' sin' : ''}" data-i="${i}">
-      <span>${tc(m.peaje.nombre_display)}<small>km ${m.along.toFixed(0)}${m.peaje.departamento ? ' · ' + tc(m.peaje.departamento) : ''}${sentido}</small></span>
+    return `<button type="button" class="fila${tarifa == null ? ' sin' : ''}${i === peajeActivo ? ' on' : ''}" data-i="${i}">
+      <span class="nro">${i + 1}</span>
+      <span class="nm">${tc(m.peaje.nombre_display)}<small>km ${m.along.toFixed(0)}${m.peaje.departamento ? ' · ' + tc(m.peaje.departamento) : ''}${sentido}</small></span>
       <span class="v">${tarifa != null ? fmt(tarifa) : 'no aplica'}</span></button>`;
-  }).join('') : '<p class="pie">No se detectaron peajes en esta ruta.</p>';
+  }).join('');
+  const parada = (nombre, km) => `<div class="parada"><span class="cuadro"></span><span class="nm">${nombre}<small>km ${km}</small></span></div>`;
   const el = document.getElementById('tiquete');
   el.innerHTML = `
     <header><h2>${selOrigen.n} → ${selDestino.n}</h2>Categoría ${cat} · ${Peajes.CAT[cat]}</header>
-    ${filas}
+    <div class="trayecto">
+      ${parada(selOrigen.n, 0)}
+      ${filas || '<p class="pie">No se detectaron peajes en esta ruta.</p>'}
+      ${parada(selDestino.n, ruta.distanceKm.toFixed(0))}
+    </div>
     <div class="total"><span>Total</span><span>${fmt(total)}</span></div>
     <p class="pie">Tarifas vigentes 2026 · incluyen el aporte al Fosevi</p>`;
   el.querySelectorAll('button.fila').forEach(b => b.addEventListener('click', () => irAPeajeEnMapa(+b.dataset.i)));
 }
 
 function formatDuracion(h) {
-  const horas = Math.floor(h);
-  const min = Math.round((h - horas) * 60);
+  // se redondea el total en minutos primero, para no mostrar "14 h 60 min"
+  const totalMin = Math.round(h * 60);
+  const horas = Math.floor(totalMin / 60);
+  const min = totalMin % 60;
   if (horas === 0) return `${min} min`;
   return `${horas} h ${min} min`;
 }
@@ -633,6 +613,7 @@ function iniciarMapa() {
   requestAnimationFrame(() => requestAnimationFrame(fixSize));
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fixSize);
   window.addEventListener('resize', fixSize);
+  map.on('zoomend', despejarEtiquetas);
 }
 
 // Todos los peajes, tenues, como contexto: los de la ruta se pintan encima
@@ -666,9 +647,10 @@ function renderMapa(ruta, matches, encuadrar = true) {
   routeLayer.addLayer(L.marker(ruta.latlon[0], { icon: extremoIcon(selOrigen.n), keyboard: false }));
   routeLayer.addLayer(L.marker(ruta.latlon[ruta.latlon.length - 1], { icon: extremoIcon(selDestino.n), keyboard: false }));
 
-  tollMarkers = matches.map(m => {
-    const marker = L.marker([m.peaje.lat, m.peaje.lon], { icon: Peajes.icono(m.peaje, { on: true, precio: true }), zIndexOffset: 1000, title: tc(m.peaje.nombre_display) });
+  tollMarkers = matches.map((m, i) => {
+    const marker = L.marker([m.peaje.lat, m.peaje.lon], { icon: Peajes.icono(m.peaje, { on: true, precio: true, nro: i + 1 }), zIndexOffset: 1000, title: `${i + 1}. ${tc(m.peaje.nombre_display)}` });
     marker.bindPopup(() => popupHtml(m.peaje, m.along), { maxWidth: 260 });
+    marker.on('click', () => marcarActivo(i));
     tollLayerGroup.addLayer(marker);
     return marker;
   });
@@ -678,13 +660,62 @@ function renderMapa(ruta, matches, encuadrar = true) {
     map.invalidateSize();
     const caja = line.getBounds();
     map.setView(caja.getCenter(), map.getBoundsZoom(caja, false, L.point(80, 80)) - 1);
+    despejarEtiquetas();
   }, 50);
+  else setTimeout(despejarEtiquetas, 50);
 }
 
-// Lleva el mapa al peaje elegido (en la tira o en el tiquete) y abre su ficha
+/* En el mapa nada se monta: primero los números (que se esconden si chocan con
+   otro número o con el nombre de una ciudad), luego las tarifas (que además
+   evitan las talanqueras). Al acercar el mapa van apareciendo; el peaje
+   elegido siempre muestra las dos cosas. Los peajes de fondo (gris) se
+   esconden con el mapa lejos, cuando solo serían ruido alrededor de la ruta. */
+function despejarEtiquetas() {
+  if (!map) return;
+  if (tollMarkers.length) {
+    const lejos = map.getZoom() < 9;
+    if (lejos && map.hasLayer(fondoLayer)) map.removeLayer(fondoLayer);
+    if (!lejos && !map.hasLayer(fondoLayer)) map.addLayer(fondoLayer);
+  }
+  const rect = e => e.getBoundingClientRect();
+  const choca = (r, lista) => lista.some(q => r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top);
+  const ciudades = [...document.querySelectorAll('#routeMap .mk-extremo .mk-precio')].map(rect);
+  const orden = tollMarkers.map((m, i) => i).sort((a, b) => (b === peajeActivo) - (a === peajeActivo));
+  const elDe = i => tollMarkers[i].getElement();
+  const mostrar = (e, ok) => { e.style.visibility = ok ? '' : 'hidden'; };
+
+  const numeros = [...ciudades];
+  orden.forEach(i => {
+    const e = elDe(i) && elDe(i).querySelector('.mk-nro');
+    if (!e) return;
+    const r = rect(e), ok = i === peajeActivo || !choca(r, numeros);
+    mostrar(e, ok);
+    if (ok) numeros.push(r);
+  });
+  const puestas = [...numeros];
+  tollMarkers.forEach((m, i) => { const e = elDe(i); if (e) puestas.push(rect(e.querySelector('svg'))); });
+  orden.forEach(i => {
+    const e = elDe(i) && elDe(i).querySelector('.mk-precio');
+    if (!e) return;
+    const r = rect(e), ok = i === peajeActivo || !choca(r, puestas);
+    mostrar(e, ok);
+    if (ok) puestas.push(r);
+  });
+}
+
+// Marca el peaje elegido en el tiquete y en el mapa (sin mover el mapa)
+function marcarActivo(i) {
+  peajeActivo = i;
+  document.querySelectorAll('#tiquete button.fila').forEach(b => b.classList.toggle('on', +b.dataset.i === i));
+  tollMarkers.forEach((m, j) => { const e = m.getElement(); if (e) e.classList.toggle('activo', j === i); });
+  despejarEtiquetas();
+}
+
+// Lleva el mapa al peaje elegido en el tiquete y abre su ficha
 function irAPeajeEnMapa(i) {
   const marker = tollMarkers[i];
   if (!map || !marker) return;
+  marcarActivo(i);
   // el peaje queda en el centro del mapa; el popup se abre sin desplazarlo
   map.setView(marker.getLatLng(), Math.max(map.getZoom(), 13), { animate: true });
   const popup = marker.getPopup();
@@ -706,10 +737,10 @@ function popupHtml(p, along) {
   </div>`;
 }
 
-// Origen y destino: un cuadro oscuro con el nombre de la ciudad, como en la tira
+// Origen y destino: un cuadro oscuro con el nombre de la ciudad, como en el tiquete
 function extremoIcon(nombre) {
   return L.divIcon({
-    className: 'mk',
+    className: 'mk mk-extremo',
     html: `<span style="display:block;width:16px;height:16px;background:#0d2a1c;border:3px solid #f6e016"></span><span class="mk-precio" style="left:20px;top:-4px">${nombre}</span>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8],

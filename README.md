@@ -11,7 +11,7 @@ de INVIAS ([datos.gov.co](https://www.datos.gov.co/Transporte/Peajes/68qj-5xux))
 - **Viaje** ([docs/index.html](docs/index.html)) — la portada: ¿cuánto pagas de
   peajes? Origen y destino con buscador predictivo de municipios, ruta trazada con
   Mapbox Directions (tráfico en tiempo real y opción de evitar peajes), y los peajes
-  del camino dibujados como una vía recta con su kilómetro, más el total como tiquete.
+  del camino en un tiquete que se lee como la vía (origen, peajes numerados, destino y total).
 - **Mapa** ([docs/mapa.html](docs/mapa.html)) — los 181 peajes sobre un mapa real
   (OpenStreetMap), filtrables por departamento y tipo de operador, con la tarifa
   visible al acercar y la ficha de cada peaje.
