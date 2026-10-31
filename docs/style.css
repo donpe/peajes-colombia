@@ -138,12 +138,13 @@ code{font-size:.9em;background:var(--surface);padding:1px 5px}
 .tira .tramo{position:relative;height:100px}
 .tira .via{position:absolute;left:0;right:0;top:46px;height:10px;background:var(--asfalto)}
 .tira .via::after{content:"";position:absolute;left:0;right:0;top:4px;height:2px;background:repeating-linear-gradient(90deg,var(--accent) 0 18px,transparent 18px 30px)}
+.tira .extremo{position:absolute;top:42px;width:18px;height:18px;background:var(--asfalto);border:3px solid var(--accent);z-index:1}
+.tira .extremo.ini{left:-2px} .tira .extremo.fin{right:-2px}
 .tira .p{position:absolute;top:0;transform:translateX(-50%);text-align:center;font-size:var(--step-small);line-height:1.3;white-space:nowrap;background:none;border:0;padding:0;cursor:pointer;color:var(--ink)}
 .tira .p .km{display:block;color:var(--muted);height:20px}
 .tira .p .tq{margin:0 0 0 50%;transform:translateX(-4px)}
 .tira .p:hover .tq{transform:translateX(-4px) scale(1.2)}
-.tira .p .nom{display:block;margin-top:14px;font-weight:600}
-.tira .p.alt .nom{margin-top:34px}
+.tira .p .nom{display:block;margin-top:calc(14px + 20px * var(--fila, 0));font-weight:600}
 .tira .p.alt .km{visibility:hidden}
 
 /* =========================== Viaje (inicio) =========================== */

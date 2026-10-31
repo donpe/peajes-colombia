@@ -569,20 +569,28 @@ function mostrarResultados({ encuadrar = true } = {}) {
 function pintarTira(ruta, matches, cat) {
   const total = ruta.distanceKm || 1;
   const pos = km => Math.min(94, Math.max(6, km / total * 100));
-  let ultimo = -100;
+  // separación mínima entre etiquetas: ~76px medidos sobre el ancho real del tramo
+  // (en el teléfono el tramo mide ~200px, así que el porcentaje cambia)
+  const anchoTramo = Math.max(160, (document.getElementById('tira').clientWidth || 440) - 170);
+  const minimo = 76 / anchoTramo * 100;
+  // cada etiqueta va en la primera fila donde no choca; si no cabe en ninguna,
+  // en la que tenga más espacio. La fila 0 muestra el km, las demás solo la tarifa.
+  const ultimo = [-100, -100, -100];
   const puntos = matches.map((m, i) => {
     const x = pos(m.along);
-    const alt = x - ultimo < 12;
-    if (!alt) ultimo = x;
+    let fila = ultimo.findIndex(u => x - u >= minimo);
+    if (fila < 0) fila = ultimo.indexOf(Math.min(...ultimo));
+    ultimo[fila] = x;
     const tarifa = m.peaje.categorias ? m.peaje.categorias[cat] : null;
-    return `<button type="button" class="p${alt ? ' alt' : ''}" data-i="${i}" style="left:${x}%"
+    return `<button type="button" class="p${fila ? ' alt' : ''}" data-i="${i}" style="left:${x}%;--fila:${fila}"
         aria-label="${tc(m.peaje.nombre_display)}, km ${m.along.toFixed(0)}, ${tarifa != null ? fmt(tarifa) : 'no aplica a esta categoría'}">
       <span class="km">km ${m.along.toFixed(0)}</span>${Peajes.talanquera(Peajes.tipoClase(m.peaje), true, 1.1).svg}
       <span class="nom">${tarifa != null ? fmt(tarifa) : '—'}</span></button>`;
   }).join('');
+  const filas = ultimo.filter(u => u > -100).length;
   const el = document.getElementById('tira');
   el.setAttribute('aria-label', `La ruta como una vía recta de ${selOrigen.n} a ${selDestino.n}, con sus peajes`);
-  el.innerHTML = `<span class="ciudad">${selOrigen.n}</span><div class="tramo"><div class="via"></div>${puntos}</div><span class="ciudad">${selDestino.n}</span>`;
+  el.innerHTML = `<span class="ciudad">${selOrigen.n}</span><div class="tramo" style="height:${64 + 20 * filas}px"><div class="via"></div><span class="extremo ini"></span><span class="extremo fin"></span>${puntos}</div><span class="ciudad">${selDestino.n}</span>`;
   el.querySelectorAll('button.p').forEach(b => b.addEventListener('click', () => irAPeajeEnMapa(+b.dataset.i)));
 }
 
@@ -662,9 +670,11 @@ function renderMapa(ruta, matches, encuadrar = true) {
     return marker;
   });
 
+  // encuadre un nivel más abierto que el justo, para ver la ruta con su entorno
   if (encuadrar) setTimeout(() => {
     map.invalidateSize();
-    map.fitBounds(line.getBounds(), { padding: [40, 40] });
+    const caja = line.getBounds();
+    map.setView(caja.getCenter(), map.getBoundsZoom(caja, false, L.point(80, 80)) - 1);
   }, 50);
 }
 
@@ -672,11 +682,12 @@ function renderMapa(ruta, matches, encuadrar = true) {
 function irAPeajeEnMapa(i) {
   const marker = tollMarkers[i];
   if (!map || !marker) return;
-  const zoom = Math.max(map.getZoom(), 13);
-  // se corre el centro 90px hacia arriba para que el popup no quede pegado al borde
-  const punto = map.project(marker.getLatLng(), zoom).subtract([0, 90]);
-  map.setView(map.unproject(punto, zoom), zoom, { animate: true });
+  // el peaje queda en el centro del mapa; el popup se abre sin desplazarlo
+  map.setView(marker.getLatLng(), Math.max(map.getZoom(), 13), { animate: true });
+  const popup = marker.getPopup();
+  popup.options.autoPan = false;
   marker.openPopup();
+  popup.options.autoPan = true;
   if (window.matchMedia('(max-width: 860px)').matches) document.getElementById('routeMap').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -692,11 +703,11 @@ function popupHtml(p, along) {
   </div>`;
 }
 
-// Origen y destino: un punto oscuro con el nombre de la ciudad
+// Origen y destino: un cuadro oscuro con el nombre de la ciudad, como en la tira
 function extremoIcon(nombre) {
   return L.divIcon({
     className: 'mk',
-    html: `<span style="display:block;width:16px;height:16px;border-radius:50%;background:#0d2a1c;border:3px solid #f6e016"></span><span class="mk-precio" style="left:20px;top:-4px">${nombre}</span>`,
+    html: `<span style="display:block;width:16px;height:16px;background:#0d2a1c;border:3px solid #f6e016"></span><span class="mk-precio" style="left:20px;top:-4px">${nombre}</span>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8],
   });
