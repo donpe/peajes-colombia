@@ -91,6 +91,7 @@ function renderDeptoSelect() {
 
   sel.addEventListener('change', () => {
     activeDepto = sel.value;
+    soltarSeleccion();
     applyFilters();
     zoomToDepto(activeDepto);
   });
@@ -144,6 +145,7 @@ function renderChips() {
 
 function setActiveType(key) {
   activeType = key;
+  soltarSeleccion();
   document.querySelectorAll('#chips button').forEach(ch => ch.setAttribute('aria-pressed', String(ch.dataset.key === key)));
   applyFilters();
 }
@@ -269,6 +271,16 @@ function showDetail(p) {
   sheet.hidden = false;
   sheet.scrollTop = 0;
   document.getElementById('closeDetail').focus({ preventScroll: true });
+}
+
+// Al cambiar de filtro la ficha abierta deja de tener sentido: se cierra y el
+// peaje deja de estar seleccionado (sin mover el foco, que sigue en el filtro)
+function soltarSeleccion() {
+  if (!selectedId) return;
+  const anterior = selectedId;
+  selectedId = null;
+  document.getElementById('detailSheet').hidden = true;
+  if (markerById[anterior]) markerById[anterior].setIcon(iconoDe(peajes.find(x => x.id === anterior))).setZIndexOffset(0);
 }
 
 function closeDetail() {

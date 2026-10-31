@@ -5,9 +5,7 @@
 
 const { fmt, tc } = Peajes;
 
-// Token público de Mapbox: está pensado para vivir en código de cliente
-// (se restringe por dominio desde el dashboard de Mapbox, no ocultándolo).
-const MAPBOX_TOKEN = 'pk.eyJ1IjoiZXZlbGlvcmFtaXJleiIsImEiOiJjbXU3aDRrcDIwaXMxMndwdTk2eWdlN2hsIn0.Uyd-HgsYhu7Zj6y5K8DLUQ';
+const { MAPBOX_TOKEN } = Peajes;
 // driving-traffic: usa tráfico en tiempo real para el tiempo estimado —
 // más preciso que un perfil sin tráfico (ver limitación documentada en Acerca).
 const MAPBOX_URL = 'https://api.mapbox.com/directions/v5/mapbox/driving-traffic';

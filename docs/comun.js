@@ -19,7 +19,8 @@ const Peajes = (() => {
   const ROMANOS = /^(i|ii|iii|iv|v|vi|vii|viii|ix|x)$/;   // "Tarapacá II", no "Tarapacá Ii"
   const tc = s => (s || '').toLowerCase().replace(/(^|\s|\(|-|\/)([a-záéíóúñü]+)/g,
     (m, a, w) => a + (a !== '' && ROMANOS.test(w) ? w.toUpperCase()
-      : a === ' ' && MENORES.has(w) ? w : w[0].toUpperCase() + w.slice(1)));
+      : a === ' ' && MENORES.has(w) ? w : w[0].toUpperCase() + w.slice(1)))
+    .replace(/\bD\.c\./g, 'D.C.');
 
   const tipoClase = p => p.operador_tipo === 'INVIAS' ? 'invias' : p.operador_tipo === 'Concesión' ? 'conc' : 'def';
 
@@ -72,18 +73,24 @@ const Peajes = (() => {
     return L.divIcon({ className: 'mk', html: t.svg + etiqueta, iconSize: [t.w, t.h], iconAnchor: [t.ax, t.ay], popupAnchor: [0, -t.h] });
   }
 
-  // Mapa base en gris, para que las talanqueras y la ruta sean lo único con color
+  // Token público de Mapbox: está pensado para vivir en código de cliente
+  // (se restringe por dominio desde el dashboard de Mapbox, no ocultándolo).
+  const MAPBOX_TOKEN = 'pk.eyJ1IjoiZXZlbGlvcmFtaXJleiIsImEiOiJjbXU3aDRrcDIwaXMxMndwdTk2eWdlN2hsIn0.Uyd-HgsYhu7Zj6y5K8DLUQ';
+
+  // Mapa base: Mapbox Outdoors casi en gris (el filtro está en --tiles), para que
+  // se lean el relieve de la cordillera y las vías sin competir con la ruta y las
+  // talanqueras. En modo oscuro es el mismo mapa, oscurecido por el filtro.
   function capaBase(mapa) {
-    return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 18,
+    return L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/tiles/512/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`, {
+      tileSize: 512, zoomOffset: -1, maxZoom: 18,
+      attribution: '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> <a href="https://www.mapbox.com/map-feedback/" target="_blank" rel="noopener">Mejora este mapa</a>',
     }).addTo(mapa);
   }
 
   document.addEventListener('DOMContentLoaded', montarVehiculo);
 
   return {
-    CATS, CAT, CORTO, fmt, tc, tipoClase, talanquera, icono, capaBase, setCat,
+    CATS, CAT, CORTO, fmt, tc, tipoClase, talanquera, icono, capaBase, setCat, MAPBOX_TOKEN,
     get cat() { return cat; },
   };
 })();

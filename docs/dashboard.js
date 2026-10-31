@@ -33,6 +33,12 @@ async function init() {
   pintar();
   pintarCercanos();
   document.addEventListener('peajes:cat', pintar);
+  // Redibujar solo si cambia el ancho (girar el teléfono, cambiar la ventana)
+  let anchoPrevio = innerWidth, espera;
+  addEventListener('resize', () => {
+    clearTimeout(espera);
+    espera = setTimeout(() => { if (innerWidth !== anchoPrevio) { anchoPrevio = innerWidth; pintar(); } }, 150);
+  });
 }
 
 function pintar() {
@@ -58,27 +64,32 @@ function pintar() {
 /* 1. ¿Cuánto cuesta un peaje? — columnas por rango de $2.000 */
 function pintarDistribucion(con, cat, med, prom) {
   const vals = con.map(p => p.categorias[cat]);
-  const paso = 2000, ancho = 720, alto = 240, top = 46;
-  const nb = Math.ceil((Math.max(...vals) + 1) / paso);
+  // El SVG se dibuja al ancho real del contenedor para que el texto quede a 13px
+  // también en el teléfono; en pantallas angostas los rangos se agrandan
+  const ancho = Math.min(720, Math.max(300, document.getElementById('dist').clientWidth || 720));
+  const alto = ancho < 500 ? 200 : 240, top = 46;
+  const max = Math.max(...vals) + 1;
+  const paso = [2000, 5000, 10000, 20000].find(p => ancho / Math.ceil(max / p) >= 18) || 20000;
+  const nb = Math.ceil(max / paso);
   const bins = Array.from({ length: nb }, (_, i) => ({ desde: i * paso, ps: [] }));
   con.forEach(p => bins[Math.floor(p.categorias[cat] / paso)].ps.push(p));
   const maxN = Math.max(...bins.map(b => b.ps.length));
   const bw = ancho / nb, colW = Math.min(24, bw - 4);
   const y = n => top + (alto - top) * (1 - n / maxN);
   const xm = v => v / (nb * paso) * ancho;
-  const cada = Math.ceil(nb / 7);
+  const cada = Math.ceil(nb / Math.floor(ancho / 80));
   const etiqueta = b => `${fmt(b.desde)} a ${fmt(b.desde + paso - 1)}: ${b.ps.length} peaje${b.ps.length === 1 ? '' : 's'}`;
 
   document.getElementById('dist').innerHTML = `
     <svg viewBox="0 0 ${ancho} ${alto + 34}" role="img" aria-labelledby="distTitulo">
       <title id="distTitulo">Cantidad de peajes por rango de tarifa, categoría ${cat}. Mediana ${fmt(med)}.</title>
+      <g class="med"><line x1="${xm(med)}" x2="${xm(med)}" y1="0" y2="${alto}"/><text x="${xm(med) + 6}" y="12"${xm(med) > ancho - 150 ? ` text-anchor="end" dx="-12"` : ''}>mediana ${fmt(med)}</text></g>
       ${bins.map((b, i) => b.ps.length ? `<g class="col" data-i="${i}" tabindex="0" role="img" aria-label="${etiqueta(b)}">
         <rect x="${i * bw}" y="0" width="${bw}" height="${alto}" fill="transparent"/>
         <path class="d" d="M${i * bw + (bw - colW) / 2},${alto} V${y(b.ps.length) + 4} q0,-4 4,-4 h${colW - 8} q4,0 4,4 V${alto} Z"/>
         <text class="n" x="${i * bw + bw / 2}" y="${y(b.ps.length) - 6}" text-anchor="middle">${b.ps.length}</text></g>` : '').join('')}
       <line class="eje" x1="0" x2="${ancho}" y1="${alto + 1}" y2="${alto + 1}"/>
       ${bins.filter((b, i) => i % cada === 0).map(b => `<text x="${xm(b.desde)}" y="${alto + 22}">${b.desde ? fmtMil(b.desde) : '$0'}</text>`).join('')}
-      <g class="med"><line x1="${xm(med)}" x2="${xm(med)}" y1="0" y2="${alto}"/><text x="${xm(med) + 6}" y="12">mediana ${fmt(med)}</text></g>
     </svg>`;
   document.getElementById('explDist').innerHTML =
     `Cuántos peajes cobran cada rango de precio para la categoría ${cat}. La mitad cuesta menos de <b>${fmt(med)}</b>; el promedio es ${fmt(prom)}. Pasa el cursor (o el foco) por una columna para ver cuáles son.`;
