@@ -77,14 +77,17 @@ const Peajes = (() => {
   // (se restringe por dominio desde el dashboard de Mapbox, no ocultándolo).
   const MAPBOX_TOKEN = 'pk.eyJ1IjoiZXZlbGlvcmFtaXJleiIsImEiOiJjbXU3aDRrcDIwaXMxMndwdTk2eWdlN2hsIn0.Uyd-HgsYhu7Zj6y5K8DLUQ';
 
-  // Mapa base: Mapbox Outdoors casi en gris (el filtro está en --tiles), para que
-  // se lean el relieve de la cordillera y las vías sin competir con la ruta y las
-  // talanqueras. En modo oscuro es el mismo mapa, oscurecido por el filtro.
+  // Mapa base: Mapbox Navigation, que resalta la red vial con su número de ruta.
+  // De noche en modo oscuro; cambia solo si cambia el tema del sistema.
   function capaBase(mapa) {
-    return L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/tiles/512/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`, {
+    const oscuro = matchMedia('(prefers-color-scheme: dark)');
+    const url = () => `https://api.mapbox.com/styles/v1/mapbox/navigation-${oscuro.matches ? 'night' : 'day'}-v1/tiles/512/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`;
+    const capa = L.tileLayer(url(), {
       tileSize: 512, zoomOffset: -1, maxZoom: 18,
       attribution: '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> <a href="https://www.mapbox.com/map-feedback/" target="_blank" rel="noopener">Mejora este mapa</a>',
     }).addTo(mapa);
+    oscuro.addEventListener('change', () => capa.setUrl(url()));
+    return capa;
   }
 
   document.addEventListener('DOMContentLoaded', montarVehiculo);

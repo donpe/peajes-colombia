@@ -657,7 +657,10 @@ function renderMapa(ruta, matches, encuadrar = true) {
 
   // la vía: trazo oscuro con la línea amarilla discontinua encima
   const asfalto = getComputedStyle(document.documentElement).getPropertyValue('--asfalto').trim() || '#0d2a1c';
+  const borde = getComputedStyle(document.documentElement).getPropertyValue('--ruta-borde').trim() || '#ffffff';
   const line = L.polyline(ruta.latlon, { color: asfalto, weight: 7, opacity: .95 });
+  // borde claro debajo, para que la ruta se separe de las vías del mapa base
+  routeLayer.addLayer(L.polyline(ruta.latlon, { color: borde, weight: 11, opacity: .9 }));
   routeLayer.addLayer(line);
   routeLayer.addLayer(L.polyline(ruta.latlon, { color: '#f6e016', weight: 2, dashArray: '8 8' }));
   routeLayer.addLayer(L.marker(ruta.latlon[0], { icon: extremoIcon(selOrigen.n), keyboard: false }));

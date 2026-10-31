@@ -65,7 +65,7 @@ Y abrir `http://localhost:8420`.
 
 - [Peajes — INVIAS vía datos.gov.co](https://www.datos.gov.co/Transporte/Peajes/68qj-5xux) (CC BY-SA 4.0)
 - División político-administrativa y DIVIPOLA — DANE
-- Mapas — datos de [OpenStreetMap](https://www.openstreetmap.org/copyright), estilo Outdoors de [Mapbox](https://www.mapbox.com/about/maps/)
+- Mapas — datos de [OpenStreetMap](https://www.openstreetmap.org/copyright), estilo Navigation de [Mapbox](https://www.mapbox.com/about/maps/)
 - Ruteo — [Mapbox Directions](https://www.mapbox.com/directions)
 - Verificación de nombre de vía en Ruta — [OSRM](https://project-osrm.org) `/nearest` (servidor público, solo para esta consulta auxiliar)
 
