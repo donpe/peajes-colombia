@@ -91,12 +91,15 @@ function normaliza(s) {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
+// "Armenia, Quindío" (lo que el propio campo muestra tras elegir) también vale:
+// lo que va antes de la coma busca el municipio y lo de después filtra el departamento
 function buscarMunicipios(q) {
-  const nq = normaliza(q.trim());
+  const [nq, nd = ''] = normaliza(q).split(',').map(s => s.trim());
   if (!nq) return [];
   const starts = [];
   const contains = [];
   municipios.forEach(m => {
+    if (nd && !normaliza(m.d).startsWith(nd)) return;
     const nn = normaliza(m.n);
     if (nn.startsWith(nq)) starts.push(m);
     else if (nn.includes(nq)) contains.push(m);
@@ -121,9 +124,11 @@ function setupAutocomplete(inputId, listId, onSelect) {
   function render() {
     if (!items.length) {
       list.innerHTML = `<li class="ac-empty" role="option" aria-disabled="true">Sin resultados. Revisa la ortografía o prueba con otro municipio.</li>`;
+      list.classList.add('vacia');
       setOpen(true);
       return;
     }
+    list.classList.remove('vacia');
     list.innerHTML = items.map((m, i) => `
       <li class="ac-item" role="option" id="${listId}-${i}" aria-selected="${i === hlIndex}" data-i="${i}">
         <b>${m.n}</b><span>${m.d}</span>
@@ -158,6 +163,7 @@ function setupAutocomplete(inputId, listId, onSelect) {
   });
 
   input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !list.hidden) { setOpen(false); return; }
     if (list.hidden || !items.length) return;
     if (e.key === 'ArrowDown') { e.preventDefault(); hlIndex = Math.min(hlIndex + 1, items.length - 1); render(); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); hlIndex = Math.max(hlIndex - 1, 0); render(); }
@@ -495,7 +501,10 @@ async function calcularRuta() {
     const n = rutasCalculadas.length;
     status.textContent = n > 1 ? `Hay ${n} rutas posibles; elige una para ver sus peajes.` : '';
   } catch (err) {
-    status.textContent = err.message || 'No se pudo calcular la ruta. Intenta de nuevo.';
+    // fetch sin red falla con un TypeError ("Failed to fetch"), que no le dice nada a nadie
+    status.textContent = err instanceof TypeError && /fetch|network|load failed/i.test(err.message)
+      ? 'No hay conexión con el servicio de rutas. Revisa tu internet e intenta de nuevo.'
+      : err.message || 'No se pudo calcular la ruta. Intenta de nuevo.';
     status.className = 'route-status error';
   } finally {
     btn.disabled = false;
@@ -601,7 +610,7 @@ function formatDuracion(h) {
 /* ---------------- mapa ---------------- */
 
 function iniciarMapa() {
-  map = L.map('routeMap', { zoomControl: true }).setView([4.6, -74.1], 6);
+  map = L.map('routeMap', { zoomControl: true, zoomSnap: .5 }).setView([4.6, -74.1], 6);
   Peajes.capaBase(map);
   fondoLayer = L.layerGroup().addTo(map);
   routeLayer = L.layerGroup().addTo(map);
@@ -613,16 +622,23 @@ function iniciarMapa() {
   requestAnimationFrame(() => requestAnimationFrame(fixSize));
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fixSize);
   window.addEventListener('resize', fixSize);
-  map.on('zoomend', despejarEtiquetas);
+  map.on('zoomend', () => { if ((map.getZoom() >= ZOOM_FONDO_TOCABLE) !== fondoTocable) pintarFondo(); despejarEtiquetas(); });
 }
 
-// Todos los peajes, tenues, como contexto: los de la ruta se pintan encima
-function pintarFondo(excluir = new Set()) {
+// Todos los peajes, tenues, como contexto: los de la ruta se pintan encima.
+// Con el mapa lejos se montan unos sobre otros y no se pueden tocar uno por uno,
+// así que son solo dibujo; desde ZOOM_FONDO_TOCABLE se vuelven botones con su ficha.
+const ZOOM_FONDO_TOCABLE = 9;
+let fondoExcluido = new Set(), fondoTocable = null;
+function pintarFondo(excluir = fondoExcluido) {
+  fondoExcluido = excluir;
+  fondoTocable = map.getZoom() >= ZOOM_FONDO_TOCABLE;
   fondoLayer.clearLayers();
   inventario.forEach(p => {
     if (excluir.has(p.id)) return;
-    fondoLayer.addLayer(L.marker([p.lat, p.lon], { icon: Peajes.icono(p, { escala: .6 }), opacity: excluir.size ? .35 : .75, title: tc(p.nombre_display) })
-      .bindPopup(() => popupHtml(p), { maxWidth: 260 }));
+    const m = L.marker([p.lat, p.lon], { icon: Peajes.icono(p, { escala: .6 }), opacity: excluir.size ? .35 : .75, title: tc(p.nombre_display), interactive: fondoTocable, keyboard: fondoTocable });
+    if (fondoTocable) m.bindPopup(() => popupHtml(p), { maxWidth: 260 });
+    fondoLayer.addLayer(m);
   });
 }
 
@@ -644,8 +660,9 @@ function renderMapa(ruta, matches, encuadrar = true) {
   routeLayer.addLayer(L.polyline(ruta.latlon, { color: borde, weight: 11, opacity: .9 }));
   routeLayer.addLayer(line);
   routeLayer.addLayer(L.polyline(ruta.latlon, { color: '#f6e016', weight: 2, dashArray: '8 8' }));
-  routeLayer.addLayer(L.marker(ruta.latlon[0], { icon: extremoIcon(selOrigen.n), keyboard: false }));
-  routeLayer.addLayer(L.marker(ruta.latlon[ruta.latlon.length - 1], { icon: extremoIcon(selDestino.n), keyboard: false }));
+  // origen y destino por encima de los peajes (zIndexOffset 1000), para que su nombre no quede tapado
+  routeLayer.addLayer(L.marker(ruta.latlon[0], { icon: extremoIcon(selOrigen.n), keyboard: false, zIndexOffset: 1500 }));
+  routeLayer.addLayer(L.marker(ruta.latlon[ruta.latlon.length - 1], { icon: extremoIcon(selDestino.n), keyboard: false, zIndexOffset: 1500 }));
 
   tollMarkers = matches.map((m, i) => {
     const marker = L.marker([m.peaje.lat, m.peaje.lon], { icon: Peajes.icono(m.peaje, { on: true, precio: true, nro: i + 1 }), zIndexOffset: 1000, title: `${i + 1}. ${tc(m.peaje.nombre_display)}` });
@@ -659,7 +676,11 @@ function renderMapa(ruta, matches, encuadrar = true) {
   if (encuadrar) setTimeout(() => {
     map.invalidateSize();
     const caja = line.getBounds();
-    map.setView(caja.getCenter(), map.getBoundsZoom(caja, false, L.point(80, 80)) - 1);
+    // en un mapa angosto (teléfono) el nivel extra deja la ruta diminuta: se encuadra
+    // justo, con margen arriba (la talanquera y su número sobresalen del punto) y a la
+    // derecha (las tarifas)
+    if (map.getSize().x > 600) map.setView(caja.getCenter(), map.getBoundsZoom(caja, false, L.point(80, 80)) - 1);
+    else map.fitBounds(caja, { paddingTopLeft: L.point(24, 56), paddingBottomRight: L.point(96, 24), animate: false });
     despejarEtiquetas();
   }, 50);
   else setTimeout(despejarEtiquetas, 50);

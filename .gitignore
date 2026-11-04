@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 .claude/
 .taste-skill/
+qa/node_modules/
+qa/test-results/
+qa/playwright-report/

@@ -1,0 +1,15 @@
+{
+  "name": "peajes-qa",
+  "private": true,
+  "description": "Pruebas de QA de Peajes de Colombia con Playwright",
+  "scripts": {
+    "test": "playwright test --grep-invert @live",
+    "test:live": "LIVE=1 playwright test --project=desktop --grep @live",
+    "grabar": "GRABAR=1 playwright test grabar --project=desktop --workers=1",
+    "reporte": "playwright show-report"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@playwright/test": "^1.64.1"
+  }
+}

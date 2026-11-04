@@ -67,12 +67,18 @@ const Peajes = (() => {
 
   // Ícono de Leaflet: la talanquera y, si se pide, la tarifa de la categoría activa al lado
   // con `nro`, el número del peaje en la ruta va sobre el poste (el mismo de la tira y el tiquete)
+  // El área que se toca mide al menos 24×24 (WCAG 2.5.8) aunque la talanquera
+  // se dibuje más chica: la caja crece y el dibujo queda centrado dentro.
+  const TOQUE = 24;
   function icono(p, { on = false, precio = false, escala, nro } = {}) {
     const t = talanquera(tipoClase(p), on, escala || (on ? 1.3 : 1));
+    const w = Math.max(t.w, TOQUE), h = Math.max(t.h, TOQUE);
+    const dx = (w - t.w) / 2, dy = (h - t.h) / 2;
     const valor = p.categorias && p.categorias[cat] != null ? fmt(p.categorias[cat]) : 'sin tarifa';
-    const etiqueta = precio ? `<span class="mk-precio${on ? ' on' : ''}" style="left:${t.w + 4}px;top:${Math.max(0, t.h / 2 - 12)}px">${valor}</span>` : '';
-    const numero = nro ? `<span class="nro mk-nro">${nro}</span>` : '';
-    return L.divIcon({ className: 'mk', html: t.svg + numero + etiqueta, iconSize: [t.w, t.h], iconAnchor: [t.ax, t.ay], popupAnchor: [0, -t.h] });
+    const etiqueta = precio ? `<span class="mk-precio${on ? ' on' : ''}" style="left:${dx + t.w + 4}px;top:${dy + Math.max(0, t.h / 2 - 12)}px">${valor}</span>` : '';
+    const numero = nro ? `<span class="nro mk-nro" style="left:${dx - 12}px;top:${dy - 14}px">${nro}</span>` : '';
+    const dibujo = t.svg.replace('<svg ', `<svg style="position:absolute;left:${dx}px;top:${dy}px" `);
+    return L.divIcon({ className: nro ? 'mk mk-ruta' : 'mk', html: dibujo + numero + etiqueta, iconSize: [w, h], iconAnchor: [dx + t.ax, dy + t.ay], popupAnchor: [0, -(dy + t.h)] });
   }
 
   // Token público de Mapbox: está pensado para vivir en código de cliente
