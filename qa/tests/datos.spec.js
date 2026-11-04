@@ -1,5 +1,5 @@
 /* Datos: las seis preguntas se dibujan y se recalculan con el vehículo. */
-const { test, expect } = require('./fixtures');
+const { test, expect, elegirCategoria } = require('./fixtures');
 
 test.beforeEach(async ({ page }) => {
   await page.goto('dashboard.html');
@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
 test('cifras clave y cambio de vehículo', async ({ page }) => {
   await expect(page.locator('#claves')).toContainText('categoría I');
   const antes = await page.locator('#claves li b').first().textContent();
-  await page.locator('.vehiculo label', { hasText: /^V$/ }).click();
+  await elegirCategoria(page, 'V');
   await expect(page.locator('#claves')).toContainText('categoría V');
   expect(await page.locator('#claves li b').first().textContent()).not.toBe(antes);
   await expect(page.locator('#cats li.on')).toContainText('V ·');

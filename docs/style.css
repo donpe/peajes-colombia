@@ -65,6 +65,7 @@ code{font-size:.9em;background:var(--surface);padding:1px 5px}
 .vehiculo span:hover{background:var(--surface-hover)}
 .vehiculo input:checked + span{background:var(--accent);color:var(--accent-ink);font-weight:600}
 .vehiculo input:focus-visible + span{outline:2px solid var(--ink);outline-offset:2px}
+.vehiculo .desc,.veh-chip,.veh-velo{display:none}
 
 /* ---- controles comunes ---- */
 .btn{display:inline-flex;align-items:center;justify-content:center;background:var(--accent);color:var(--accent-ink);border:0;padding:0 22px;min-height:48px;font-weight:600;cursor:pointer;white-space:nowrap;text-decoration:none;transition:transform .15s var(--ease-out)}
@@ -115,6 +116,7 @@ code{font-size:.9em;background:var(--surface);padding:1px 5px}
   -webkit-mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50% / 20px 100%;
           mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50% / 20px 100%}
 .tiquete header{text-align:center;margin-bottom:16px}
+.cambiar-veh{border:0;background:none;padding:0;font:inherit;color:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .tiquete header b,.tiquete h2{display:block;font-family:var(--titulo);font-weight:800;font-size:var(--step-lead);letter-spacing:-.01em;line-height:1.15;margin:0}
 .tiquete .fila{display:flex;justify-content:space-between;gap:12px;padding:5px 0}
 .tiquete .fila small{display:block;color:var(--muted);font-size:inherit}
@@ -315,8 +317,23 @@ ul.pasos > li::before{content:"";width:12px;height:12px;margin:8px 0 0 10px;back
 @media (max-width: 860px){
   .bar{flex-wrap:wrap;gap:4px 16px;padding:10px 16px}
   .tabs a{padding:8px 8px}
-  .vehiculo{margin-left:0;width:100%}
-  .vehiculo .opts{flex:1} .vehiculo label{flex:1} .vehiculo span{min-width:0}
+  .marca{font-size:1.375rem}
+  .tabs{order:3;width:100%}
+  /* Tu vehículo: un chip junto a la marca; las opciones suben en una hoja */
+  .veh-chip{display:inline-flex;align-items:center;gap:6px;margin-left:auto;min-height:40px;padding:0 14px;border:1.5px solid var(--ink);border-radius:999px;background:none;font-size:var(--step-small);cursor:pointer;white-space:nowrap}
+  .veh-chip svg{margin-left:2px}
+  .veh-chip[aria-expanded="true"]{background:var(--ink);color:var(--bg)}
+  .vehiculo{display:none}
+  .vehiculo.abierta{display:block;position:fixed;left:0;right:0;bottom:0;z-index:3000;margin:0;padding:20px 16px calc(16px + env(safe-area-inset-bottom));background:var(--paper);box-shadow:var(--sombra-flota)}
+  .vehiculo.abierta legend{float:left;width:100%;padding:0;margin:0 0 8px;color:var(--ink);font-family:var(--titulo);font-weight:800;font-size:var(--step-lead)}
+  .vehiculo.abierta .opts{clear:both;flex-direction:column;gap:0}
+  .vehiculo.abierta label{display:flex;align-items:center;gap:14px;min-height:52px;border-bottom:1px solid var(--surface);cursor:pointer}
+  .vehiculo.abierta label:last-child{border-bottom:0}
+  .vehiculo.abierta span{min-width:48px;padding:6px 0}
+  .vehiculo.abierta .desc{display:block;font-style:normal}
+  .vehiculo.abierta .desc::first-letter{text-transform:uppercase}
+  .vehiculo.abierta input:checked ~ .desc{font-weight:600}
+  .veh-velo:not([hidden]){display:block;position:fixed;inset:0;z-index:2999;background:rgba(13,42,28,.45)}
   .bar{position:static}
   .viaje,.explorar{display:block;height:auto}
   /* En el teléfono el viaje se lee en orden: pregunta, formulario, cuánto

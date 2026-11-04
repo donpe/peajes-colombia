@@ -57,4 +57,13 @@ async function leerTiquete(page) {
   });
 }
 
-module.exports = { test, expect: base.expect, calcular, leerTiquete };
+// Elige la categoría como lo haría la persona: en el teléfono abre el chip y toca
+// la opción en la hoja; en escritorio toca la fila de la cabecera
+async function elegirCategoria(page, c) {
+  const chip = page.locator('.veh-chip');
+  if (await chip.isVisible()) await chip.click();
+  await page.locator(`.vehiculo label:has(input[value="${c}"])`).click();
+  await base.expect(page.locator('.vehiculo')).not.toHaveClass(/abierta/);
+}
+
+module.exports = { test, expect: base.expect, calcular, leerTiquete, elegirCategoria };

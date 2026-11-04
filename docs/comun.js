@@ -42,10 +42,67 @@ const Peajes = (() => {
     document.dispatchEvent(new CustomEvent('peajes:cat', { detail: c }));
   }
 
+  /* En el teléfono la fila de categorías se vuelve un chip junto a la marca
+     ("I Automóvil ▾") y las opciones suben en una hoja desde abajo, cada una
+     con su descripción. En escritorio queda la fila de siempre. */
+  let chip = null, velo = null, abridor = null;
+  const fs = () => document.querySelector('.vehiculo');
+  const textoChip = () => `<b>${cat}</b> ${CORTO[cat][0].toUpperCase() + CORTO[cat].slice(1)}<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M2 4.5l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>`;
+  const hojaAbierta = () => !!fs()?.classList.contains('abierta');
+
+  function abrirHoja() {
+    const f = fs(); if (!f) return;
+    abridor = document.activeElement !== document.body ? document.activeElement : chip;
+    f.classList.add('abierta'); velo.hidden = false;
+    chip.setAttribute('aria-expanded', 'true');
+    f.querySelector('input:checked')?.focus();
+  }
+  function cerrarHoja() {
+    const f = fs(); if (!f || !hojaAbierta()) return;
+    const conFoco = f.contains(document.activeElement);
+    f.classList.remove('abierta'); velo.hidden = true;
+    chip.setAttribute('aria-expanded', 'false');
+    // el tiquete se vuelve a pintar al cambiar la categoría: se busca su nuevo botón "cambiar"
+    const vuelta = abridor?.isConnected ? abridor : (abridor?.className && document.querySelector('.' + abridor.className.split(' ')[0])) || chip;
+    if (conFoco) vuelta.focus({ preventScroll: true });
+  }
+
+  // "cambiar" en el tiquete: abre la hoja en el teléfono, o lleva el foco a la fila en escritorio
+  function elegirVehiculo() {
+    if (chip && getComputedStyle(chip).display !== 'none') abrirHoja();
+    else fs()?.querySelector('input:checked')?.focus();
+  }
+
   function montarVehiculo() {
-    document.querySelectorAll('.vehiculo input').forEach(r => {
+    const f = fs();
+    if (!f) return;
+    f.id = 'vehiculo';
+    f.querySelectorAll('input').forEach(r => {
       r.checked = r.value === cat;
       r.addEventListener('change', () => setCat(r.value));
+      r.parentElement.insertAdjacentHTML('beforeend', `<em class="desc">${CAT[r.value]}</em>`);
+    });
+    chip = document.createElement('button');
+    chip.type = 'button'; chip.className = 'veh-chip';
+    chip.setAttribute('aria-controls', 'vehiculo'); chip.setAttribute('aria-expanded', 'false');
+    chip.innerHTML = textoChip();
+    chip.setAttribute('aria-label', `Tu vehículo: categoría ${cat}, ${CAT[cat]}. Cambiar`);
+    document.querySelector('.bar .marca')?.after(chip);
+    velo = document.createElement('div');
+    velo.className = 'veh-velo'; velo.hidden = true;
+    document.body.append(velo);
+
+    chip.addEventListener('click', () => hojaAbierta() ? cerrarHoja() : abrirHoja());
+    velo.addEventListener('click', cerrarHoja);
+    // Se cierra al tocar una opción o con Enter; las flechas solo mueven la selección
+    // (el clic que generan las flechas llega con detail 0)
+    f.addEventListener('click', e => { if (hojaAbierta() && e.target.closest('label') && e.detail > 0) setTimeout(cerrarHoja, 120); });
+    f.addEventListener('keydown', e => { if (hojaAbierta() && (e.key === 'Enter' || e.key === 'Escape')) { e.preventDefault(); cerrarHoja(); } });
+    // Tab fuera de la hoja la cierra; tocar una opción también quita el foco un instante (relatedTarget nulo) y no cuenta
+    f.addEventListener('focusout', e => { const a = e.relatedTarget; if (hojaAbierta() && a && !f.contains(a) && a !== chip) cerrarHoja(); });
+    document.addEventListener('peajes:cat', () => {
+      chip.innerHTML = textoChip();
+      chip.setAttribute('aria-label', `Tu vehículo: categoría ${cat}, ${CAT[cat]}. Cambiar`);
     });
   }
 
@@ -101,7 +158,7 @@ const Peajes = (() => {
   document.addEventListener('DOMContentLoaded', montarVehiculo);
 
   return {
-    CATS, CAT, CORTO, fmt, tc, tipoClase, talanquera, icono, capaBase, setCat, MAPBOX_TOKEN,
+    CATS, CAT, CORTO, fmt, tc, tipoClase, talanquera, icono, capaBase, setCat, elegirVehiculo, MAPBOX_TOKEN,
     get cat() { return cat; },
   };
 })();

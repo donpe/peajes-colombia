@@ -1,5 +1,5 @@
 /* Mapa: filtros combinados, conteos, lista, ficha del peaje, foco y estado en la URL. */
-const { test, expect } = require('./fixtures');
+const { test, expect, elegirCategoria } = require('./fixtures');
 
 const n = async loc => +(await loc.textContent()).trim();
 
@@ -82,7 +82,7 @@ test.describe('mapa', () => {
     if (isMobile) await page.locator('#listToggle').click();
     await page.locator('#list .lista-item[data-id="rio-frio"]').click();
     await expect(page.locator('#detailContent .fila.on')).toContainText('I · ');
-    await page.locator('.vehiculo label', { hasText: /^IV$/ }).click();
+    await elegirCategoria(page, 'IV');
     await expect(page.locator('#sidebarCount')).toContainText('categoría IV');
     await expect(page.locator('#detailContent .fila.on')).toContainText('IV · ');
     await expect(page.locator('#list .lista-item[data-id="rio-frio"] .v')).toHaveText('$37.200');

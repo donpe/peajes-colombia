@@ -1,6 +1,6 @@
 /* Viaje (portada): autocompletado, validación, cálculo de la ruta, tiquete,
    cambio de vehículo, rutas alternas, estado en la URL y manejo de errores. */
-const { test, expect, calcular, leerTiquete } = require('./fixtures');
+const { test, expect, calcular, leerTiquete, elegirCategoria } = require('./fixtures');
 
 const IBAGUE_ARMENIA = 'index.html?o=Ibagu%C3%A9%2C+Tolima&d=Armenia%2C+Quind%C3%ADo&cat=I';
 const BOGOTA_MEDELLIN = 'index.html?o=Bogot%C3%A1+D.C.%2C+Bogot%C3%A1+D.C.&d=Medell%C3%ADn%2C+Antioquia&cat=I';
@@ -155,19 +155,59 @@ test.describe('@ruta cálculo', () => {
     await page.locator('#tiquete .total').waitFor();
     const pedidas = [];
     page.on('request', r => { if (r.url().includes('/directions/')) pedidas.push(r.url()); });
-    await page.locator('.vehiculo label', { hasText: /^V$/ }).click();
+    await elegirCategoria(page, 'V');
     await expect(page.locator('#rSub')).toContainText('categoría V');
     const t = await leerTiquete(page);
     expect(t.total).toBeGreaterThan(27200);
     expect(t.total).toBe(t.filas.reduce((s, f) => s + (f.tarifa || 0), 0));
     await expect(page).toHaveURL(/cat=V/);
-    await expect(page.locator('#tiquete header')).toContainText('Categoría V');
+    await expect(page.locator('#tiquete header')).toContainText('categoría V');
     expect(pedidas).toHaveLength(0);
+  });
+
+  test('en el teléfono el vehículo es un chip que abre una hoja', async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'solo en el teléfono');
+    await page.goto(IBAGUE_ARMENIA);
+    await page.locator('#tiquete .total').waitFor();
+    const chip = page.locator('.veh-chip');
+    await expect(page.locator('.vehiculo')).toBeHidden();
+    await expect(chip).toContainText('Automóvil');
+    // la cabecera ya no se lleva una fila entera: chip y marca comparten la primera
+    const [m, c] = await Promise.all([page.locator('.marca').boundingBox(), chip.boundingBox()]);
+    expect(Math.abs(m.y + m.height / 2 - (c.y + c.height / 2))).toBeLessThan(6);
+    await chip.click();
+    await expect(chip).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('.vehiculo')).toBeVisible();
+    await expect(page.locator('.vehiculo input[value="I"]')).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.vehiculo')).toBeHidden();
+    await expect(chip).toBeFocused();
+    // "cambiar" en el tiquete abre la misma hoja; al elegir se cierra y el foco vuelve al tiquete
+    await page.locator('#tiquete .cambiar-veh').click();
+    await expect(page.locator('.vehiculo')).toBeVisible();
+    await page.locator('.vehiculo label:has(input[value="II"])').click();
+    await expect(page.locator('.vehiculo')).toBeHidden();
+    await expect(chip).toContainText('Bus o 2 ejes');
+    await expect(page.locator('#tiquete header')).toContainText('categoría II');
+    await expect(page.locator('#tiquete .cambiar-veh')).toBeFocused();
+    // tocar fuera la cierra sin cambiar nada
+    await chip.click();
+    await page.locator('.veh-velo').click({ position: { x: 20, y: 20 } });
+    await expect(page.locator('.vehiculo')).toBeHidden();
+    await expect(page).toHaveURL(/cat=II/);
+  });
+
+  test('en escritorio "cambiar" lleva el foco a la fila de categorías', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'solo en escritorio');
+    await page.goto(IBAGUE_ARMENIA);
+    await page.locator('#tiquete .cambiar-veh').click();
+    await expect(page.locator('.vehiculo input[value="I"]')).toBeFocused();
+    await expect(page.locator('.veh-chip')).toBeHidden();
   });
 
   test('el vehículo elegido se recuerda en otra visita', async ({ page }) => {
     await page.goto('index.html');
-    await page.locator('.vehiculo label', { hasText: /^III$/ }).click();
+    await elegirCategoria(page, 'III');
     await page.goto('dashboard.html');
     await expect(page.locator('.vehiculo input[value="III"]')).toBeChecked();
     await expect(page.locator('#claves')).toContainText('categoría III');

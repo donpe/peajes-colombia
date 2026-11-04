@@ -587,7 +587,7 @@ function pintarTiquete(ruta, matches, cat, total) {
   const parada = (nombre, km) => `<div class="parada"><span class="cuadro"></span><span class="nm">${nombre}<small>km ${km}</small></span></div>`;
   const el = document.getElementById('tiquete');
   el.innerHTML = `
-    <header><h2>${selOrigen.n} → ${selDestino.n}</h2>Categoría ${cat} · ${Peajes.CAT[cat]}</header>
+    <header><h2>${selOrigen.n} → ${selDestino.n}</h2>Tarifas para categoría ${cat} · ${Peajes.CAT[cat]} · <button type="button" class="cambiar-veh">cambiar</button></header>
     <div class="trayecto">
       ${parada(selOrigen.n, 0)}
       ${filas || '<p class="pie">No se detectaron peajes en esta ruta.</p>'}
@@ -596,6 +596,7 @@ function pintarTiquete(ruta, matches, cat, total) {
     <div class="total"><span>Total</span><span>${fmt(total)}</span></div>
     <p class="pie">Tarifas vigentes 2026 · incluyen el aporte al Fosevi</p>`;
   el.querySelectorAll('button.fila').forEach(b => b.addEventListener('click', () => irAPeajeEnMapa(+b.dataset.i)));
+  el.querySelector('.cambiar-veh').addEventListener('click', Peajes.elegirVehiculo);
 }
 
 function formatDuracion(h) {
